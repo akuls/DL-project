@@ -1,4 +1,4 @@
-# Attentive-CF (Restructured)
+# Attentive-CF
 Visually Explainable Recommendations
 
 ## Requirements
