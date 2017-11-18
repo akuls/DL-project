@@ -10,14 +10,14 @@ import model as md
 import random
 from collections import defaultdict
 from torchvision import transforms
-from constants import HAVE_CUDA, BUCKET_SIZE, EMBEDDING_DIM, SIDELENGTH
+from ../../Config/constants import HAVE_CUDA, BUCKET_SIZE, EMBEDDING_DIM, SIDELENGTH
 import time
 
 if HAVE_CUDA:
 	import torch.cuda as cuda
 
 
-itemsfile = open("item_ids.txt","r")
+itemsfile = open("../../Data/item_ids.txt","r")
 items = []
 nitems = []
 itemsbin = []
@@ -33,7 +33,7 @@ for l in itemsfile:
 if len(nitems)>0:
 	itemsbin.append(nitems)
 
-datafile = open("pairs.txt","r")	#Change this to train/test as the data is divided
+datafile = open("../../Data/pairs.txt","r")	#Change this to train/test as the data is divided
 data = []
 i=0
 pdata = defaultdict(list)

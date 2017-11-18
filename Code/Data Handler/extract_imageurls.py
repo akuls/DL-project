@@ -10,9 +10,9 @@ import json
 import ast
 
 # jfile = open("reviews_Clothing_Shoes_and_Jewelry_5.json")
-ifile = open("item_ids.txt","r")
-dfile = open("metadata.json","r")
-ofile = open("item_urls.txt","w")
+ifile = open("../../Data/Dataitem_ids.txt","r")
+dfile = open("../../Data/metadata.json","r")
+ofile = open("../../Data/item_urls.txt","w")
 x = set()
 for f in ifile:
 	x.add(str(f))

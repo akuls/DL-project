@@ -2,8 +2,8 @@ import PIL
 from PIL import Image
 import os
 
-dir_to_save = "../Resize_images_50/"
-for root, dirs, files in os.walk("../images/", topdown=True):
+dir_to_save = "../../Data/Resize_images_50/"
+for root, dirs, files in os.walk("../../Data/images/", topdown=True):
 	i=0
 	for name in files:
 		i+=1
