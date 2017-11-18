@@ -1,2 +1,4 @@
 Code/*/*.pyc
+Code/*/*.patch
+Config/*.pyc
 Data/*
