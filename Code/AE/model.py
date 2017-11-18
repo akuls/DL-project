@@ -8,6 +8,8 @@ import torch.optim as optim
 import numpy as np
 import random
 from torchvision import transforms
+import sys
+sys.path.append('../../Config')
 from constants import HAVE_CUDA, BUCKET_SIZE, EMBEDDING_DIM, SIDELENGTH
 
 if HAVE_CUDA:
@@ -73,63 +75,98 @@ class AutoEncoder(nn.Module):
 	"""docstring for AutoEncoder"""
 	def __init__(self):
 		super(AutoEncoder, self).__init__()
-		self.c1 = nn.Conv2d(3, 20, (3,3), stride=2)
-		self.mp = nn.MaxPool2d(2, stride=2)
-		self.c2 = nn.Conv2d(20, 100, (5,5), stride=2)
-		self.c3 = nn.Conv2d(100, 1, (1,1), stride=1,bias = False)
-		self.ump = nn.MaxUnpool2d(2, stride=2)
-		self.uc3 = nn.ConvTranspose2d(1, 100, (1,1), stride=1,bias = False)
-		self.uc2 = nn.ConvTranspose2d(100, 20, (6,6), stride=2)
-		self.uc1 = nn.ConvTranspose2d(20, 3, (4,4), stride=2)
-		self.out = None
-		# self.ll1 = nn.Linear(1944, 100)
+		self.encoder = nn.Sequential(
+			nn.Conv2d(in_channels=3, out_channels=20, kernel_size=3, stride=2),
+			nn.ReLU(True),
+			nn.MaxPool2d(kernel_size=2, stride=2),
+			nn.Conv2d(in_channels=20, out_channels=256, kernel_size=3, stride=1),
+			nn.ReLU(True),
+			nn.Conv2d(in_channels=256, out_channels=1, kernel_size=1, stride=1)
+		)
 
-	def forward(self,input_img):
-		out = self.c3((self.c2(self.c1(input_img))))#.view(1,1,1,-1)
-		out1 = self.uc1(self.uc2(self.uc3(out)))
-		# print out
-		return out1
-		# pass
+		self.decoder = nn.Sequential(
+			nn.ConvTranspose2d(in_channels=1, out_channels=256, kernel_size=1, stride=1),
+			nn.ReLU(True),
+			nn.ConvTranspose2d(in_channels=256, out_channels=20, kernel_size=3, stride=1),
+			nn.MaxUnpool2d(kernel_size=2, stride=2),
+			nn.ReLU(True),
+			nn.ConvTranspose2d(in_channels=20, out_channels=3, kernel_size=3, stride=2, output_padding=1)
+		)
+
+	def forward(self, x):
+		print 'Encode'
+		y = self.encoder(x)
+
+		print type(y)
+		print 'Decode'
+		x_cap = self.decoder(x)
+		return x_cap
+
+
+# class AutoEncoder(nn.Module):
+# 	"""docstring for AutoEncoder"""
+# 	def __init__(self):
+# 		super(AutoEncoder, self).__init__()
+# 		self.l1 = nn.Conv2d(3, 20, 3, stride=2)
+# 		self.l2 = nn.ReLU(True)
+# 		self.l3 = nn.MaxPool2d(2, stride=2)
+# 		self.l4 = nn.Conv2d(20, 256, 3, stride=1)
+# 		self.l5 = nn.Conv2d(256, 1, 1, stride=1)
+
+# 		self.ul1 = nn.ConvTranspose2d(1, 256, 1, stride=1)
+# 		self.ul2 = nn.ConvTranspose2d(256, 20, 3, stride=1)
+# 		self.ul3 = nn.MaxUnpool2d(2, stride=2)
+# 		self.ul4 = nn.ReLU(True)
+# 		self.ul5 = nn.ConvTranspose2d(20, 3, 3, stride=2, output_padding=1)
+
+# 	def forward(self, x):
+# 		print 'Encode'
+# 		y = self.l5(self.l4(self.l3(self.l2(self.l1(x)))))
+
+# 		print 'Decode'
+# 		xcap = self.ul1(y)
+# 		xcap = self.ul2(xcap)
+# 		xcap = self.ul3(xcap)
+# 		xcap = self.ul4(xcap)
+# 		xcap = self.ul5(xcap)
+# 		return x_cap
 		
-	def getImageVector():
-		out = self.c3((self.c2(self.c1(input_img)))).view(1,1,1,-1)
-		return out
-		pass
 		
-def trainAE(data,model,optimizer,verbose=True,batch_size = 32):
-	tot_loss = 0.0
+
+def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
+	total_loss = 0.0
 	tt = transforms.ToTensor()	#Helper class to convert Jpgs to tensors
 	criterion = nn.MSELoss()
 	if HAVE_CUDA:
 		criterion.cuda()
 
-	it = 0
+	iteration = 0
 	# model2 = ExtractImageVectors(EMBEDDING_DIM)
 	# Pairwise Learning
 	optimizer.zero_grad()
 	# print data
-	for itm in data:
-		it+=1
-		# print it
+	for item_id in data:
+		iteration+=1
+		# print iteration
 		
-		itm_img = Image.open(os.getcwd()+"/../Resize_images_50/"+itm+".jpg")			
-		itm_img = ag.Variable(tt(itm_img)).view(1,-1,SIDELENGTH,SIDELENGTH)
+		item_image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
+		item_image = ag.Variable(tt(item_image)).view(1,-1,SIDELENGTH,SIDELENGTH)
 
-		pred_out = model(itm_img)
+		pred_out = model(item_image)
 
 		# Calculating loss
 		loss = 0
-		loss += criterion(pred_out, itm_img)
+		loss += criterion(pred_out, item_image)
 		# print "Curr_Loss ============================================================================================ ", loss.data[0]
-		tot_loss += loss.data[0]		
+		total_loss += loss.data[0]		
 		loss.backward(retain_variables=True)
-		if it%batch_size == 0:
+		if iteration%batch_size == 0:
 			optimizer.step()
 			optimizer.zero_grad()
 
 	optimizer.step()	
-	print "Loss : ", tot_loss/len(data)
-	return tot_loss/len(data)
+	print "Loss : ", total_loss/len(data)
+	return total_loss/len(data)
 	pass
 
 def trainModel1(data, items, usr_vts, users_to_ix, model, optimizer, verbose=True):
