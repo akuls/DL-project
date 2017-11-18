@@ -97,7 +97,7 @@ class AutoEncoder(nn.Module):
 		print 'Encode'
 		y = self.encoder(x)
 
-		print type(y)
+		print 'Intermediate y is of size', y.size()
 		print 'Decode'
 		x_cap = self.decoder(x)
 		return x_cap
