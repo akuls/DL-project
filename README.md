@@ -7,7 +7,7 @@ Python 2.7
 Pytorch
 
 ## Data Collection
-The data is taken from [here](http://jmcauley.ucsd.edu/data/amazon/). We have specifically worked with Clothing, Shoes and Jewelry data.
+The data is taken from [here](http://jmcauley.ucsd.edu/data/amazon/). We have specifically worked with Clothing, Shoes and Jewelry data. Place the data.json and Dataitem_ids.txt inside a "Data" folder and place that folder beside the Code folder. Inside the "Data" folder, create 2 folders- "images" and "Resize_images_50". Next run extract_images.py, collect_images.py and resize_images.py in that order. 
 
 ## Code (Files to care about)
 There are some files that don't have explanation as they are not directly involved with the project
