@@ -88,49 +88,16 @@ class AutoEncoder(nn.Module):
 			nn.ConvTranspose2d(in_channels=1, out_channels=256, kernel_size=1, stride=1),
 			nn.ReLU(True),
 			nn.ConvTranspose2d(in_channels=256, out_channels=20, kernel_size=3, stride=1),
-			nn.MaxUnpool2d(kernel_size=2, stride=2),
 			nn.ReLU(True),
-			nn.ConvTranspose2d(in_channels=20, out_channels=3, kernel_size=3, stride=2, output_padding=1)
+			nn.ConvTranspose2d(in_channels=20, out_channels=3, kernel_size=3, stride=2, output_padding=0),
+			nn.ConvTranspose2d(in_channels=3, out_channels=3, kernel_size=2, stride=2, output_padding=0)
 		)
 
 	def forward(self, x):
-		print 'Encode'
 		y = self.encoder(x)
-
-		print 'Intermediate y is of size', y.size()
-		print 'Decode'
-		x_cap = self.decoder(x)
+		x_cap = self.decoder(y)
 		return x_cap
 
-
-# class AutoEncoder(nn.Module):
-# 	"""docstring for AutoEncoder"""
-# 	def __init__(self):
-# 		super(AutoEncoder, self).__init__()
-# 		self.l1 = nn.Conv2d(3, 20, 3, stride=2)
-# 		self.l2 = nn.ReLU(True)
-# 		self.l3 = nn.MaxPool2d(2, stride=2)
-# 		self.l4 = nn.Conv2d(20, 256, 3, stride=1)
-# 		self.l5 = nn.Conv2d(256, 1, 1, stride=1)
-
-# 		self.ul1 = nn.ConvTranspose2d(1, 256, 1, stride=1)
-# 		self.ul2 = nn.ConvTranspose2d(256, 20, 3, stride=1)
-# 		self.ul3 = nn.MaxUnpool2d(2, stride=2)
-# 		self.ul4 = nn.ReLU(True)
-# 		self.ul5 = nn.ConvTranspose2d(20, 3, 3, stride=2, output_padding=1)
-
-# 	def forward(self, x):
-# 		print 'Encode'
-# 		y = self.l5(self.l4(self.l3(self.l2(self.l1(x)))))
-
-# 		print 'Decode'
-# 		xcap = self.ul1(y)
-# 		xcap = self.ul2(xcap)
-# 		xcap = self.ul3(xcap)
-# 		xcap = self.ul4(xcap)
-# 		xcap = self.ul5(xcap)
-# 		return x_cap
-		
 		
 
 def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
@@ -155,8 +122,7 @@ def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
 		pred_out = model(item_image)
 
 		# Calculating loss
-		loss = 0
-		loss += criterion(pred_out, item_image)
+		loss =  criterion(pred_out, item_image)
 		# print "Curr_Loss ============================================================================================ ", loss.data[0]
 		total_loss += loss.data[0]		
 		loss.backward(retain_variables=True)

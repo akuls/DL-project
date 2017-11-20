@@ -56,10 +56,7 @@ def get_user_item_pair_buckets():
 			pdata = defaultdict(list)
 	if len(pdata)>0:
 		data.append(pdata)
-	# print len(data)
-	# for i in range(len(data)):
-	# 	print len(data[i])
-	# 	break
+
 
 	return data, users_to_id
 
@@ -109,24 +106,25 @@ def begin_training(num_epochs = 10, print_every = 100):
 	start_time = time.time()
 	iteration = 0
 	total_loss = 0
+	num_buckets = len(all_item_buckets)
 
 	#Run for num_epochs number of epochs
-	while(iteration<num_epochs):
+	while(iteration<num_epochs*num_buckets):
 		iteration+=1
 
 		# Selecting a data bucket
-		bucket_index = random.randint(0, len(all_item_buckets)-1)
+		bucket_index = random.randint(0, num_buckets-1)
 		print 'Iteration', iteration, 'picked bucket->', bucket_index
 		# b_no = 1
 		# Optimizer
 		
 		# Train autoencoder
 		total_loss += md.trainAE(all_item_buckets[bucket_index], AE, optimizer)
-		break
 		# md.trainAE(itemsbin[b_no],AE,optimizer)
 
 		# Checkpointing
 		torch.save(AE,os.getcwd()+"/Checkpoints/auto_encoder")
+		# break
 		# torch.save(optimizer,os.getcwd()+"/Checkpoints/optm")
 
 		# Train the current batch
@@ -141,7 +139,10 @@ def begin_training(num_epochs = 10, print_every = 100):
 	end_time = time.time()
 	print 'Total training time for', num_epochs, 'epochs = ', (end_time-start_time)/60, 's'
 
-if __name__ == '__main__':
+def main():
 	print 'Beginning to train AE'
 	begin_training(num_epochs = 10)
 	print 'Training AE completed'
+
+if __name__ == '__main__':
+	main()
