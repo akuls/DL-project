@@ -2,3 +2,5 @@ Code/*/*.pyc
 Code/*/*.patch
 Config/*.pyc
 Data/*
+Code/*/Checkpoints/*
+Experiments/*

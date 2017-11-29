@@ -75,12 +75,15 @@ class AutoEncoder(nn.Module):
 	"""docstring for AutoEncoder"""
 	def __init__(self):
 		super(AutoEncoder, self).__init__()
-		self.encoder = nn.Sequential(
+		self.encode1 = nn.Sequential(
 			nn.Conv2d(in_channels=3, out_channels=20, kernel_size=3, stride=2),
 			nn.ReLU(True),
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.Conv2d(in_channels=20, out_channels=256, kernel_size=3, stride=1),
-			nn.ReLU(True),
+			nn.ReLU(True)
+		)
+		self.encoder = nn.Sequential(
+			self.encode1,
 			nn.Conv2d(in_channels=256, out_channels=1, kernel_size=1, stride=1)
 		)
 
@@ -98,7 +101,12 @@ class AutoEncoder(nn.Module):
 		x_cap = self.decoder(y)
 		return x_cap
 
-		
+	def Encode(self,x):
+		return self.encoder(x)
+
+	def Decode(self,x):
+		return self.decoder(x)
+
 
 def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
 	total_loss = 0.0
@@ -122,16 +130,17 @@ def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
 		pred_out = model(item_image)
 
 		# Calculating loss
-		loss =  criterion(pred_out, item_image)
+		loss = criterion(pred_out, item_image)
 		# print "Curr_Loss ============================================================================================ ", loss.data[0]
-		total_loss += loss.data[0]		
-		loss.backward(retain_variables=True)
+		total_loss += loss.data[0]	
+		loss.backward()	
+		# loss.backward(retain_variables=True)
 		if iteration%batch_size == 0:
 			optimizer.step()
 			optimizer.zero_grad()
 
 	optimizer.step()	
-	print "Loss : ", total_loss/len(data)
+	# print "Loss : ", total_loss/len(data)
 	return total_loss/len(data)
 	pass
 
