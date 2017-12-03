@@ -118,7 +118,30 @@ def get_Image_Vectors(model,image_ids):
 	image_vectors = (model.get_intermediate_vector(image_variables)).view(len(image_ids),-1)
 	return image_vectors
 
-	
+def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
+	if os.path.isfile(filename):
+		return torch.load(filename)
+	else:
+		return torch.nn.Embedding(num_users,embedding_dim)
+
+def get_random_from_dict(data, batch_size=0):
+	keys = random.sample(range(0, len(data)-1), batch_size)
+	return dict((k, data[k]) for k in keys)
+
+def loadAE(filename):
+	# Load AutoEncoder
+	if os.path.isfile(filename):
+		AE = torch.load(filename)
+	else:
+		AE = md.AutoEncoder()
+	return AE
+
+def loadOptimizer(filename, MODEL):
+	if os.path.isfile(filename):
+		optimizer = torch.load(filename)
+	else:
+		optimizer = optim.Adam(MODEL.parameters(), lr=0.001)
+
 if __name__ == '__main__':
 	#One time run
 	# generate_user_id_file()
