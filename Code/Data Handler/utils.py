@@ -124,6 +124,9 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 	else:
 		return torch.nn.Embedding(num_users,embedding_dim)
 
+def save_user_vectors(user_vectors,filename):
+	torch.save(user_vectors,filename)
+
 def get_random_from_dict(data, batch_size=0):
 	keys = random.sample(range(0, len(data)-1), batch_size)
 	return dict((k, data[k]) for k in keys)
