@@ -12,7 +12,9 @@ from collections import defaultdict
 from torchvision import transforms
 import time
 sys.path.append('../../Config')
+sys.path.append('../Data Handler')
 from constants import HAVE_CUDA, BUCKET_SIZE, EMBEDDING_DIM, SIDELENGTH
+from utils import *
 
 if HAVE_CUDA:
 	import torch.cuda as cuda
@@ -168,7 +170,7 @@ def transform_images(x=None):
 	print y
 	return y
 
-def get_Image_vectors():
+def get_Image_Feature_maps():
 	AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder")
 	itemsfile = open("../../Data/item_ids.txt","r")
 	tt = transforms.ToTensor()
@@ -198,15 +200,19 @@ def main():
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
-	out = transform_images()
-	out = ((out.view(3,50,50)).data.numpy()*255).astype(np.uint8)
-	out = np.swapaxes(out,0,2)
-	out = np.swapaxes(out,0,1)
-	print out.shape
-	im = Image.fromarray(out,"RGB")
-	im.save("your_file.png")
-	# temp = get_Image_vectors()
+	# out = transform_images()
+	# out = ((out.view(3,50,50)).data.numpy()*255).astype(np.uint8)
+	# out = np.swapaxes(out,0,2)
+	# out = np.swapaxes(out,0,1)
+	# print out.shape
+	# im = Image.fromarray(out,"RGB")
+	# im.save("your_file.png")
+	# temp = get_Image_Feature_maps()
 	# np.save("temp.npy",temp)
+	AE = md.AutoEncoder()
+	image_ids = get_item_id_buckets()[0]
+	i_vt = get_Image_Vectors(AE,image_ids)
+	print i_vt
 	print 'Training AE completed'
 
 if __name__ == '__main__':

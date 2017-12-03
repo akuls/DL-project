@@ -2,6 +2,14 @@ import sys
 import os
 import numpy as np
 import collections
+from torchvision import transforms
+import PIL
+from PIL import Image
+import os
+import torch
+import torch.nn as nn
+import torch.autograd as ag
+from constants import *
 
 def generate_user_id_file():
 	datafile = open("../../Data/pairs.txt","r")
@@ -83,6 +91,34 @@ def get_ids_from_file(filename):
 		data.append(Id)
 	return data
 
+def image_id_to_variable(item_id):
+	tt = transforms.ToTensor()
+	item_image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
+	item_image = ag.Variable(tt(item_image)).view(1,-1,SIDELENGTH,SIDELENGTH)
+	return item_image
+
+def image_ids_to_variable(item_ids):
+	i = 0
+	for item_id in item_ids:
+		item_variable = image_id_to_variable(item_id)
+		if i == 0:
+			image_variables = item_variable
+			i += 1
+		else:
+			image_variables = torch.cat((image_variables,item_variable),0)
+	return image_variables
+
+
+def get_Image_Vectors(model,image_ids):
+	"""
+	model :: an autoencoder model that has a separate encoder and decoder function
+	image_ids :: The labels (item_ids) of the images
+	"""
+	image_variables = image_ids_to_variable(image_ids)
+	image_vectors = (model.get_intermediate_vector(image_variables)).view(len(image_ids),-1)
+	return image_vectors
+
+	
 if __name__ == '__main__':
 	#One time run
 	# generate_user_id_file()
@@ -97,3 +133,4 @@ if __name__ == '__main__':
 
 	item_ids_in_order_of_idx = get_ids_from_file("../../Data/item_to_index.txt")
 	user_ids_in_order_of_idx = get_ids_from_file("../../Data/user_to_index.txt")
+	# print len(user_ids_in_order_of_idx)

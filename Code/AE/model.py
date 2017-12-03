@@ -114,11 +114,11 @@ class AutoEncoder(nn.Module):
 	def Decode(self,x):
 		return self.decoder(x)
 
-	def get_vector(self,x):
+	def get_feature_vector(self,x):
 		return self.encode1(x)
 
 	def get_intermediate_vector(self,x):
-		return np.squeeze(self.Encode(x)).data.numpy()
+		return np.squeeze(self.Encode(x))
 
 
 def trainAE(data, model, optimizer, verbose=True, batch_size = 32):
