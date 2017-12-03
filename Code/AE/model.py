@@ -76,10 +76,13 @@ class AutoEncoder(nn.Module):
 	def __init__(self):
 		super(AutoEncoder, self).__init__()
 		self.encode1 = nn.Sequential(
-			nn.Conv2d(in_channels=3, out_channels=20, kernel_size=3, stride=2),
+			nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1),
 			nn.ReLU(True),
 			nn.MaxPool2d(kernel_size=2, stride=2),
-			nn.Conv2d(in_channels=20, out_channels=256, kernel_size=3, stride=1),
+			nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1),
+			nn.ReLU(True),
+			nn.MaxPool2d(kernel_size=2, stride=2),
+			nn.Conv2d(in_channels=64, out_channels=256, kernel_size=2, stride=1),
 			nn.ReLU(True)
 		)
 		self.encoder = nn.Sequential(
@@ -90,10 +93,14 @@ class AutoEncoder(nn.Module):
 		self.decoder = nn.Sequential(
 			nn.ConvTranspose2d(in_channels=1, out_channels=256, kernel_size=1, stride=1),
 			nn.ReLU(True),
-			nn.ConvTranspose2d(in_channels=256, out_channels=20, kernel_size=3, stride=1),
+			nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=5, stride=1),
 			nn.ReLU(True),
-			nn.ConvTranspose2d(in_channels=20, out_channels=3, kernel_size=3, stride=2, output_padding=0),
-			nn.ConvTranspose2d(in_channels=3, out_channels=3, kernel_size=2, stride=2, output_padding=0)
+			nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2),
+			nn.ReLU(True),
+			nn.ConvTranspose2d(in_channels=64, out_channels=16, kernel_size=3, stride=1, padding=2),
+			nn.ReLU(True),
+			nn.ConvTranspose2d(in_channels=16, out_channels=3, kernel_size=6, stride=2, padding=5),
+			nn.ReLU(True)
 		)
 
 	def forward(self, x):
@@ -106,6 +113,12 @@ class AutoEncoder(nn.Module):
 
 	def Decode(self,x):
 		return self.decoder(x)
+
+	def get_vector(self,x):
+		return self.encode1(x)
+
+	def get_intermediate_vector(self,x):
+		return np.squeeze(self.Encode(x)).data.numpy()
 
 
 def trainAE(data, model, optimizer, verbose=True, batch_size = 32):

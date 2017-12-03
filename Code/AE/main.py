@@ -101,6 +101,8 @@ def begin_training(num_epochs = 1, print_every = 10):
 
 	#Load all necessary classes
 	img_model, user_vts, AE, optimizer = load_classes(users_to_id)
+	AE = md.AutoEncoder()
+	optimizer = optim.Adam(AE.parameters(), lr=0.001)
 
 	#Begin training
 	start_time = time.time()
@@ -108,14 +110,15 @@ def begin_training(num_epochs = 1, print_every = 10):
 	total_loss = 0
 	num_buckets = len(all_item_buckets)
 	loss_arr = []
+	tot_iters = num_epochs*num_buckets
 
 	#Run for num_epochs number of epochs
-	while(iteration<num_epochs*num_buckets):
+	while(iteration<tot_iters):
 		iteration+=1
 
 		# Selecting a data bucket
 		bucket_index = random.randint(0, num_buckets-1)
-		# bucket_index = 0
+		bucket_index = 0
 		# print 'Iteration', iteration, 'picked bucket->', bucket_index
 		# b_no = 1
 		# Optimizer
@@ -127,16 +130,19 @@ def begin_training(num_epochs = 1, print_every = 10):
 		# md.trainAE(itemsbin[b_no],AE,optimizer)
 
 		# Checkpointing
-		torch.save(AE,os.getcwd()+"/Checkpoints/auto_encoder")
 		# break
 		# torch.save(optimizer,os.getcwd()+"/Checkpoints/optm")
 
 		# Train the current batch
 		# md.trainmodel1(data[b_no],items,user_vts,users_to_ix ,img_model,optimizer)
 		if iteration % print_every == 0:
-			print "Time elapsed ======================== ",(time.time()-start_time)
-			print "Total loss ========================== ",total_loss/print_every
+			print "============================================"
+			print iteration, "of ", tot_iters
+			print "Time elapsed = ",(time.time()-start_time)
+			print "Total loss === ",total_loss/print_every
 			total_loss = 0
+			torch.save(AE,os.getcwd()+"/Checkpoints/auto_encoder2")
+
 		# break
 
 	#Record finish time
@@ -148,8 +154,8 @@ def transform_images(x=None):
 	tt = transforms.ToTensor()
 	if x == None:
 		x = get_item_id_buckets()[0]
-	if os.path.isfile(os.getcwd()+"/Checkpoints/auto_encoder"):
-		AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder")
+	if os.path.isfile(os.getcwd()+"/Checkpoints/auto_encoder2"):
+		AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder2")
 	else:
 		AE = md.AutoEncoder()
 	for item_id in x:
@@ -162,20 +168,45 @@ def transform_images(x=None):
 	print y
 	return y
 
+def get_Image_vectors():
+	AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder")
+	itemsfile = open("../../Data/item_ids.txt","r")
+	tt = transforms.ToTensor()
+	num_items=0
+	tot_out = None
+
+	for line in itemsfile:
+		num_items+=1
+		item_id = line.split("\n")[0]
+		item_image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
+		item_image = ag.Variable(tt(item_image)).view(1,-1,SIDELENGTH,SIDELENGTH)
+		out = AE.get_vector(item_image)
+		out = ((np.squeeze(out)).data.numpy()*255)
+		if tot_out ==None:
+			tot_out = out
+			# print "shit"
+		else:
+			tot_out = np.concatenate((tot_out,out),axis=0)
+		# print tot_out.shape
+		if num_items == 1000:
+			print num_items
+			break
+	return tot_out	
 
 def main():
-	print 'Beginning to train AE'
-	loss_val = begin_training(num_epochs = 10)
+	# print 'Beginning to train AE'
+	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
-	# out = transform_images()
-	# out = ((out.view(3,50,50)).data.numpy()*255).astype(np.uint8)
-	# out = np.swapaxes(out,0,2)
-	# out = np.swapaxes(out,0,1)
-	# print out.shape
-	# im = Image.fromarray(out,"RGB")
-	# im.save("your_file.png")
-
+	out = transform_images()
+	out = ((out.view(3,50,50)).data.numpy()*255).astype(np.uint8)
+	out = np.swapaxes(out,0,2)
+	out = np.swapaxes(out,0,1)
+	print out.shape
+	im = Image.fromarray(out,"RGB")
+	im.save("your_file.png")
+	# temp = get_Image_vectors()
+	# np.save("temp.npy",temp)
 	print 'Training AE completed'
 
 if __name__ == '__main__':
