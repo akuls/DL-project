@@ -2,5 +2,6 @@ Code/*/*.pyc
 Code/*/*.patch
 Config/*.pyc
 Data/*
+Code/CLUSTERING/*
 Code/*/Checkpoints/*
 Experiments/*
