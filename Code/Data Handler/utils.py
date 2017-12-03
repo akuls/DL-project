@@ -4,7 +4,6 @@ import numpy as np
 import collections
 
 def generate_user_id_file():
-
 	datafile = open("../../Data/pairs.txt","r")
 	user_file = open("../../Data/user_ids.txt", "w")
 
@@ -76,6 +75,14 @@ def get_dict_from_index_mapping(filename):
 		data[user_idx] = items
 	return data	
 
+def get_ids_from_file(filename):
+	datafile = open(filename,"r")
+	data = []
+	for l in datafile:
+		Id, Idx = l.split(',')
+		data.append(Id)
+	return data
+
 if __name__ == '__main__':
 	#One time run
 	# generate_user_id_file()
@@ -85,5 +92,8 @@ if __name__ == '__main__':
 
 	# generate_train_test_split(get_dicts_from_text('../../Data/user_to_index.txt'), get_dicts_from_text('../../Data/item_to_index.txt'))
 
-	train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
-	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+	# train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
+	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+
+	item_ids_in_order_of_idx = get_ids_from_file("../../Data/item_to_index.txt")
+	user_ids_in_order_of_idx = get_ids_from_file("../../Data/user_to_index.txt")
