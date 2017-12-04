@@ -118,36 +118,39 @@ def image_ids_to_variable(item_ids):
 	return image_variables
 
 
-def get_image_vectors(model,image_ids=None):
+def get_image_vectors(model,image_ids=None,filename=""):
 	"""
 	model :: an autoencoder model that has a separate encoder and decoder function
 	image_ids :: The labels (item_ids) of the images
 	"""
-	if image_ids == None:
-		image_ids = get_ids_from_file("../../Data/item_to_index.txt")
-	pt = time.time()
-	data_len = len(image_ids)
-	for i in range(data_len/1000):
-		image_variables = image_ids_to_variable(image_ids[1000*(i):1000*(i+1)])
-		image_vectors = (model.get_intermediate_vector(image_variables)).view(1000,-1)
-		torch.save(image_vectors,"../../Data/image_vectors_"+str(i+1))
-		print i
+	if os.path.isfile(filename):
+		return torch.load(filename)
+	else:
+		if image_ids == None:
+			image_ids = get_ids_from_file("../../Data/item_to_index.txt")
+		pt = time.time()
+		data_len = len(image_ids)
+		for i in range(data_len/1000):
+			image_variables = image_ids_to_variable(image_ids[1000*(i):1000*(i+1)])
+			image_vectors = (model.get_intermediate_vector(image_variables)).view(1000,-1)
+			torch.save(image_vectors,"../../Data/image_vectors_"+str(i+1))
+			print i
+			et = time.time()
+			print et-pt
+			# image_vectors = torch.cat((image_vectors,image_vectors_temp),0)
+		image_variables = image_ids_to_variable(image_ids[1000*(data_len/1000):data_len])
+		image_vectors = (model.get_intermediate_vector(image_variables)).view(data_len-1000*(data_len/1000),-1)
+		torch.save(image_vectors,"../../Data/image_vectors_"+str(data_len/1000+1))
 		et = time.time()
 		print et-pt
-		# image_vectors = torch.cat((image_vectors,image_vectors_temp),0)
-	image_variables = image_ids_to_variable(image_ids[1000*(data_len/1000):data_len])
-	image_vectors = (model.get_intermediate_vector(image_variables)).view(data_len-1000*(data_len/1000),-1)
-	torch.save(image_vectors,"../../Data/image_vectors_"+str(data_len/1000+1))
-	et = time.time()
-	print et-pt
-	tf = 0
-	image_vectors = ag.Variable(torch.zeros(data_len,100))
-	for filename in os.listdir("../../Data/"):
-		if filename.startswith("image_vectors_"): 
-			file_id =  int(filename[14:])
-			# print file_id
-			image_vectors[1000*(file_id-1):min(1000*file_id,data_len)] = torch.load("../../Data/"+filename)
-	# print image_vectors
+		tf = 0
+		image_vectors = ag.Variable(torch.zeros(data_len,100))
+		for filename in os.listdir("../../Data/"):
+			if filename.startswith("image_vectors_"): 
+				file_id =  int(filename[14:])
+				# print file_id
+				image_vectors[1000*(file_id-1):min(1000*file_id,data_len)] = torch.load("../../Data/"+filename)
+		# print image_vectors
 	return image_vectors
 
 def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
@@ -157,6 +160,7 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 		return torch.nn.Embedding(num_users,embedding_dim)
 
 def get_random_from_tuple_list(data, batch_size=0):
+	random.seed(1)
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
 

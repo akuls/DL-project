@@ -20,13 +20,32 @@ class FeedForward(nn.Module):
 	"""docstring for FeedForward"""
 	def __init__(self):
 		super(FeedForward, self).__init__()
-		self.fc1 = nn.Linear(28 * 28, 200)
-		self.fc2 = nn.Linear(200, 200)
-		self.fc3 = nn.Linear(200, 10)
+		
+		self.network = nn.Sequential(
+		nn.Linear(200, 300),
+		nn.BatchNorm1d(300),
+		nn.ReLU(),
 
+		nn.Linear(300, 400),
+		nn.BatchNorm1d(400),
+		nn.ReLU(),
+		
+		nn.Linear(400, 300),
+		nn.BatchNorm1d(300),
+		nn.ReLU(),
+
+		nn.Linear(300, 200),
+		nn.BatchNorm1d(200),
+		nn.ReLU(),
+
+		nn.Linear(200, 100),
+		nn.BatchNorm1d(100),
+		nn.ReLU(),
+		
+		nn.Linear(100, 1),
+		nn.Sigmoid()
+		)
 
 	def forward(self, x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = self.fc3(x)
-		return F.log_softmax(x)
+		y_pred = self.network(x)
+		return y_pred
