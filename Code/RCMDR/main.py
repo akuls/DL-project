@@ -27,7 +27,6 @@ def get_data_for_rcmdr(ae_item_vecs, user_vecs, index_triples):
 		# print u
 		u = ag.Variable(torch.LongTensor([u]))
 		user = user_vecs(u)
-		print ae_item_vecs.size()
 		item = ae_item_vecs[v]
 
 		#Combine it with the data
