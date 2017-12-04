@@ -1,5 +1,7 @@
+import torch.optim as optim
 import sys
 import os
+import time
 import numpy as np
 import collections
 from torchvision import transforms
@@ -97,8 +99,9 @@ def get_ids_from_file(filename):
 
 def image_id_to_variable(item_id):
 	tt = transforms.ToTensor()
-	item_image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
-	item_image = ag.Variable(tt(item_image)).view(1,-1,SIDELENGTH,SIDELENGTH)
+	image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
+	item_image = ag.Variable(tt(image)).view(1,-1,SIDELENGTH,SIDELENGTH)
+	image.close()
 	return item_image
 
 def image_ids_to_variable(item_ids):
@@ -113,11 +116,13 @@ def image_ids_to_variable(item_ids):
 	return image_variables
 
 
-def get_Image_Vectors(model,image_ids):
+def get_image_vectors(model,image_ids=None):
 	"""
 	model :: an autoencoder model that has a separate encoder and decoder function
 	image_ids :: The labels (item_ids) of the images
 	"""
+	if image_ids == None:
+		image_ids = get_ids_from_file("../../Data/item_to_index.txt")[0:1000]
 	image_variables = image_ids_to_variable(image_ids)
 	image_vectors = (model.get_intermediate_vector(image_variables)).view(len(image_ids),-1)
 	return image_vectors
@@ -132,6 +137,10 @@ def get_random_from_tuple_list(data, batch_size=0):
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
 
+def save_user_vectors(user_vectors,filename):
+	torch.save(user_vectors,filename)
+
+
 def loadAE(filename=None):
 	# Load AutoEncoder
 	if os.path.isfile(filename):
@@ -141,7 +150,7 @@ def loadAE(filename=None):
 	return AE
 
 def loadOptimizer(MODEL, filename=None):
-	if os.path.isfile(filename):
+	if filename is not None and os.path.isfile(filename):
 		optimizer = torch.load(filename)
 	else:
 		optimizer = optim.Adam(MODEL.parameters(), lr=0.001)

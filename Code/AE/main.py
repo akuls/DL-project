@@ -66,11 +66,11 @@ def load_classes(users_to_id):
 	
 	# torch.nn.Module.dump_patches = True
 
-	# Load the model if available
-	if os.path.isfile(os.getcwd()+"/Checkpoints/img_model"):
-		img_model = torch.load(os.getcwd()+"/Checkpoints/img_model")
-	else:
-		img_model = md.ExtractImageVectors(EMBEDDING_DIM)
+	# # Load the model if available
+	# if os.path.isfile(os.getcwd()+"/Checkpoints/img_model"):
+	# 	img_model = torch.load(os.getcwd()+"/Checkpoints/img_model")
+	# else:
+	# 	img_model = md.ExtractImageVectors(EMBEDDING_DIM)
 	
 	# Load user vectors
 	if os.path.isfile(os.getcwd()+"/Checkpoints/user_vts"):
@@ -79,8 +79,8 @@ def load_classes(users_to_id):
 		user_vts = nn.Embedding(len(users_to_id),EMBEDDING_DIM)#,max_norm = 1.0)
 
 	# Load AutoEncoder
-	if os.path.isfile(os.getcwd()+"/Checkpoints/auto_encoder"):
-		AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder")
+	if os.path.isfile(os.getcwd()+"/Checkpoints/auto_encoder2"):
+		AE = torch.load(os.getcwd()+"/Checkpoints/auto_encoder2")
 	else:
 		AE = md.AutoEncoder()
 
@@ -89,7 +89,7 @@ def load_classes(users_to_id):
 	else:
 		optimizer = optim.Adam(AE.parameters(), lr=0.001)
 
-	return img_model, user_vts, AE, optimizer
+	return user_vts, AE, optimizer
 
 def begin_training(num_epochs = 1, print_every = 10):
 
@@ -102,9 +102,9 @@ def begin_training(num_epochs = 1, print_every = 10):
 	print 'Total number of users = ', len(users_to_id)
 
 	#Load all necessary classes
-	img_model, user_vts, AE, optimizer = load_classes(users_to_id)
-	AE = md.AutoEncoder()
-	optimizer = optim.Adam(AE.parameters(), lr=0.001)
+	user_vts, AE, optimizer = load_classes(users_to_id)
+	# AE = md.AutoEncoder()
+	# optimizer = optim.Adam(AE.parameters(), lr=0.001)
 
 	#Begin training
 	start_time = time.time()
@@ -120,7 +120,7 @@ def begin_training(num_epochs = 1, print_every = 10):
 
 		# Selecting a data bucket
 		bucket_index = random.randint(0, num_buckets-1)
-		bucket_index = 0
+		# bucket_index = 0
 		# print 'Iteration', iteration, 'picked bucket->', bucket_index
 		# b_no = 1
 		# Optimizer
@@ -143,7 +143,7 @@ def begin_training(num_epochs = 1, print_every = 10):
 			print "Time elapsed = ",(time.time()-start_time)
 			print "Total loss === ",total_loss/print_every
 			total_loss = 0
-			torch.save(AE,os.getcwd()+"/Checkpoints/auto_encoder2")
+			torch.save(AE,os.getcwd()+"/Checkpoints/auto_encoder3")
 
 		# break
 
@@ -196,7 +196,7 @@ def get_Image_Feature_maps():
 	return tot_out	
 
 def main():
-	# print 'Beginning to train AE'
+	print 'Beginning to train AE'
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
@@ -209,10 +209,11 @@ def main():
 	# im.save("your_file.png")
 	# temp = get_Image_Feature_maps()
 	# np.save("temp.npy",temp)
-	AE = md.AutoEncoder()
-	image_ids = get_item_id_buckets()[0]
-	i_vt = get_Image_Vectors(AE,image_ids)
-	print i_vt
+	# AE = md.AutoEncoder()
+	AE = loadAE(os.getcwd()+"/Checkpoints/auto_encoder2")
+	# image_ids = get_item_id_buckets()[0]
+	# i_vt = get_Image_Vectors(AE,image_ids)
+	# print i_vt
 	print 'Training AE completed'
 
 if __name__ == '__main__':
