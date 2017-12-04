@@ -8,8 +8,12 @@ from PIL import Image
 import os
 import torch
 import torch.nn as nn
+sys.path.append('../AE/')
+import model as md
 import torch.autograd as ag
+sys.path.append('../../Config')
 from constants import *
+import random
 
 def generate_user_id_file():
 	datafile = open("../../Data/pairs.txt","r")
@@ -124,11 +128,11 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 	else:
 		return torch.nn.Embedding(num_users,embedding_dim)
 
-def get_random_from_dict(data, batch_size=0):
-	keys = random.sample(range(0, len(data)-1), batch_size)
-	return dict((k, data[k]) for k in keys)
+def get_random_from_tuple_list(data, batch_size=0):
+	indexes = random.sample(range(0, len(data)-1), batch_size)
+	return [data[k] for k in indexes]
 
-def loadAE(filename):
+def loadAE(filename=None):
 	# Load AutoEncoder
 	if os.path.isfile(filename):
 		AE = torch.load(filename)
@@ -136,11 +140,13 @@ def loadAE(filename):
 		AE = md.AutoEncoder()
 	return AE
 
-def loadOptimizer(filename, MODEL):
+def loadOptimizer(MODEL, filename=None):
 	if os.path.isfile(filename):
 		optimizer = torch.load(filename)
 	else:
 		optimizer = optim.Adam(MODEL.parameters(), lr=0.001)
+
+	return optimizer
 
 if __name__ == '__main__':
 	#One time run
@@ -154,6 +160,8 @@ if __name__ == '__main__':
 	# train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
 	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 
-	item_ids_in_order_of_idx = get_ids_from_file("../../Data/item_to_index.txt")
-	user_ids_in_order_of_idx = get_ids_from_file("../../Data/user_to_index.txt")
+	# item_ids_in_order_of_idx = get_ids_from_file("../../Data/item_to_index.txt")
+	# user_ids_in_order_of_idx = get_ids_from_file("../../Data/user_to_index.txt")
 	# print len(user_ids_in_order_of_idx)
+
+	AE = loadAE('../AE/Checkpoints/auto_encoder2')
