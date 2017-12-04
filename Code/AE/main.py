@@ -211,6 +211,10 @@ def main():
 	# np.save("temp.npy",temp)
 	# AE = md.AutoEncoder()
 	AE = loadAE(os.getcwd()+"/Checkpoints/auto_encoder2")
+	ivc = get_image_vectors(AE)
+	torch.save(ivc,"../../Data/image_vectors")
+	ivc1 = torch.load("../../Data/image_vectors")
+	print ivc1
 	# image_ids = get_item_id_buckets()[0]
 	# i_vt = get_Image_Vectors(AE,image_ids)
 	# print i_vt
