@@ -101,18 +101,20 @@ def image_id_to_variable(item_id):
 	tt = transforms.ToTensor()
 	image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
 	item_image = ag.Variable(tt(image)).view(1,-1,SIDELENGTH,SIDELENGTH)
-	image.close()
 	return item_image
 
 def image_ids_to_variable(item_ids):
-	i = 0
-	for item_id in item_ids:
-		item_variable = image_id_to_variable(item_id)
-		if i == 0:
-			image_variables = item_variable
-			i += 1
-		else:
-			image_variables = torch.cat((image_variables,item_variable),0)
+	image_variables = ag.Variable(torch.zeros(len(item_ids),3,50,50))
+	for i in range(len(item_ids)):
+		item_variable = np.squeeze(image_id_to_variable(item_ids[i]))
+		image_variables[i] = item_variable
+		# print item_variable
+		# break
+		# if i == 0:
+		# 	image_variables = item_variable
+		# 	i += 1
+		# else:
+		# 	image_variables = torch.cat((image_variables,item_variable),0)
 	return image_variables
 
 
@@ -122,9 +124,30 @@ def get_image_vectors(model,image_ids=None):
 	image_ids :: The labels (item_ids) of the images
 	"""
 	if image_ids == None:
-		image_ids = get_ids_from_file("../../Data/item_to_index.txt")[0:1000]
-	image_variables = image_ids_to_variable(image_ids)
-	image_vectors = (model.get_intermediate_vector(image_variables)).view(len(image_ids),-1)
+		image_ids = get_ids_from_file("../../Data/item_to_index.txt")
+	pt = time.time()
+	data_len = len(image_ids)
+	for i in range(data_len/1000):
+		image_variables = image_ids_to_variable(image_ids[1000*(i):1000*(i+1)])
+		image_vectors = (model.get_intermediate_vector(image_variables)).view(1000,-1)
+		torch.save(image_vectors,"../../Data/image_vectors_"+str(i+1))
+		print i
+		et = time.time()
+		print et-pt
+		# image_vectors = torch.cat((image_vectors,image_vectors_temp),0)
+	image_variables = image_ids_to_variable(image_ids[1000*(data_len/1000):data_len])
+	image_vectors = (model.get_intermediate_vector(image_variables)).view(data_len-1000*(data_len/1000),-1)
+	torch.save(image_vectors,"../../Data/image_vectors_"+str(data_len/1000+1))
+	et = time.time()
+	print et-pt
+	tf = 0
+	image_vectors = ag.Variable(torch.zeros(data_len,100))
+	for filename in os.listdir("../../Data/"):
+		if filename.startswith("image_vectors_"): 
+			file_id =  int(filename[14:])
+			# print file_id
+			image_vectors[1000*(file_id-1):min(1000*file_id,data_len)] = torch.load("../../Data/"+filename)
+	# print image_vectors
 	return image_vectors
 
 def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
