@@ -10,7 +10,7 @@ import json
 import ast
 
 # jfile = open("reviews_Clothing_Shoes_and_Jewelry_5.json")
-ifile = open("../../Data/Dataitem_ids.txt","r")
+ifile = open("../../Data/item_ids.txt","r")
 dfile = open("../../Data/metadata.json","r")
 ofile = open("../../Data/item_urls.txt","w")
 x = set()

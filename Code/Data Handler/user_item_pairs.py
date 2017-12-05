@@ -10,8 +10,8 @@ import json
 import ast
 from collections import defaultdict
 
-jfile = open("reviews_Clothing_Shoes_and_Jewelry_5.json")
-ofile = open("pairs.txt","w")
+jfile = open("../../Data/reviews_Clothing_Shoes_and_Jewelry_5.json")
+ofile = open("../../Data/pairs.txt","w")
 x = defaultdict(list)
 j = 0
 for l in jfile:

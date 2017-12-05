@@ -1,7 +1,7 @@
 import urllib
 
 ifile = open("../../Data/item_urls.txt","r")
-ofile = open("../../Data/outliers.txt","w")
+# ofile = open("../../Data/outliers.txt","w")
 i = 0
 for l in ifile:
 	i+=1
@@ -9,8 +9,10 @@ for l in ifile:
 		print i
 	ll = l
 	if len(l.split(","))>2:
-		ofile.write(ll)
-		continue
+		name = l.split(",")[0]
+		url = ",".join(l.split(",")[1:])
+		# ofile.write(ll)
+		# continue
 	else:
 		name, url = l.split(",")
 	name = "../../Data/images/"+name+".jpg"
