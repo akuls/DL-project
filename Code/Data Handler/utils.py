@@ -17,6 +17,29 @@ sys.path.append('../../Config')
 from constants import *
 import random
 
+def format_time(t):
+	out_str = ""
+	s = int(t%60)
+	out_str = str(s) +"s"
+	t = t/60
+	if t==0:
+		return out_str
+	m = int(t%60)
+	out_str = str(m) +"m " + out_str
+	t = t/60
+	if t==0:
+		return out_str
+	h = t
+	out_str = str(h) +"h " + out_str
+	return out_str
+	
+
+def time_remaining(start_time, total_iterations, completed_iterations):
+	elapsed_time = time.time()-start_time
+	print "Time Elapsed: ", format_time(elapsed_time)
+	remaining_time = elapsed_time*(total_iterations-completed_iterations)/completed_iterations
+	print "Time Remaining: ",format_time(remaining_time)
+
 def generate_user_id_file():
 	datafile = open("../../Data/pairs.txt","r")
 	user_file = open("../../Data/user_ids.txt", "w")
@@ -160,7 +183,7 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 		return torch.nn.Embedding(num_users,embedding_dim)
 
 def get_random_from_tuple_list(data, batch_size=0):
-	random.seed(1)
+	# random.seed(1)
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
 
