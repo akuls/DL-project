@@ -11,7 +11,9 @@ import os
 import torch
 import torch.nn as nn
 sys.path.append('../AE/')
+sys.path.append('../RCMDR/')
 import model as md
+import rcmdr_model as rmd
 import torch.autograd as ag
 sys.path.append('../../Config')
 from constants import *
@@ -204,6 +206,18 @@ def loadAE(filename=None):
 		AE = AE.cuda()
 
 	return AE
+
+def loadrec_net(filename=None):
+	# Load AutoEncoder
+	if filename is not None and os.path.isfile(filename):
+		rec_net = torch.load(filename)
+	else:
+		rec_net = rmd.FeedForward()
+
+	if HAVE_CUDA == True:
+		rec_net = rec_net.cuda()
+
+	return rec_net
 
 def loadOptimizer(MODEL, filename=None):
 	optimizer = optim.Adam(MODEL.parameters(), lr=0.001)

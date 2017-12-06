@@ -148,7 +148,7 @@ def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
 					done += 1
 	return all_triples
 
-def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=None, criterion=None, print_every =100,checkpoint_name = "Recommender_Network"):
+def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=None, criterion=None, print_every =100,checkpoint_name = "Recommender_Network"):
 	
 	if mode is None:
 		print 'No mode given'
@@ -164,10 +164,12 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 
 		#Create loss criterion
 		if criterion is None:
-				criterion = nn.MSELoss()
+			criterion = nn.MSELoss()
+
+		if HAVE_CUDA:
+			criterion = criterion.cuda()
 
 		if mode == 'train':
-			optimizer = loadOptimizer(MODEL=rec_net)
 
 			training_size = len(data_tuples)
 			total_loss = 0.0
@@ -183,6 +185,11 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 				# print 'Number of positive+negative samples', len(train_batch)
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
 				
+				if HAVE_CUDA:
+					item_data = item_data.cuda()
+					user_data = user_data.cuda()
+					target = target.cuda()
+
 				optimizer.zero_grad()
 				#Training a full batch
 				pred_target = rec_net(item_data, user_data)
@@ -193,15 +200,16 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 				optimizer.step()
 				
 				# Print loss after ever batch of training
-				if iteration % print_every == 0:
+				if (iteration+1) % print_every == 0 or (iteration+1) == tot_iters:
 					print "============================================"
-					print iteration, "of ", tot_iters
+					print iteration+1, "of ", tot_iters
 					time_remaining(start_time, tot_iters, iteration+1)
 					print "Total loss === ",total_loss/print_every
 					print np.squeeze(pred_target).data[0:6]
 					# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
 					total_loss = 0.0
 					torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
+					torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 			##############################END OF TRAIN###################################
 
 		elif mode == 'test':
@@ -238,20 +246,15 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 	else:
 		#Call util to get the vectors and optimizer
-		AE = loadAE('../AE/Checkpoints/auto_encoder2')
-		
+		AE = loadAE('../AE/Checkpoints/auto_encoder')
+		rec_net = loadrec_net(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		optimizer = loadOptimizer(MODEL=rec_net)
+
 		print 'Loading item item_vecs'
 		pt = time.time()
 		ae_item_vecs = get_image_vectors(AE,filename="../../Data/image_vectors")
 		et = time.time()
 		print 'Takes', et-pt, 'seconds'
-		
-		if os.path.isfile(os.getcwd()+"/Checkpoints/"+checkpoint_name):
-			rec_net = torch.load(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		else:
-			rec_net = rcmdr_model.FeedForward()
-			
-
 
 		if mode == 'train':
 			data_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
@@ -259,10 +262,13 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 		elif mode == 'test':
 			data_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 
+		if HAVE_CUDA:
+			criterion = criterion.cuda()
+			ae_item_vecs = ae_item_vecs.cuda()
 		
-		run_network(rec_net, AE, ae_item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every,checkpoint_name=checkpoint_name)
+		run_network(rec_net, optimizer, ae_item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every,checkpoint_name=checkpoint_name)
 
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")
+	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=1,print_every=100, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")
 	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=5, criterion=nn.MSELoss())
