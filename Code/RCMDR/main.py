@@ -140,7 +140,7 @@ def get_data_for_rcmdr(ae_item_vecs, index_triples):
 
 	return item_data, user_data, targets
 
-def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
+def add_negative_samples_train(tuple_list, data_dict, total_items, num_negative=0):
 	"""
 	tuple_list- The list of (user_idx, item_idx, 1)
 	data_dict- The list containing (user_idx) ->[item_idxs bought]. 
@@ -166,6 +166,41 @@ def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
 				if(x not in existing_item_idxs):
 					all_triples.append((int(u), int(x), 0.0))
 					done += 1
+	return all_triples
+
+def add_negative_samples_test(tuple_list, data_dict, total_items, train_dict, num_negative=0):
+	"""
+	tuple_list- The list of (user_idx, item_idx, 1)
+	data_dict- dict containing (user_idx) ->[item_idxs bought]. 
+	We need this to add items not in this list as negative samples for each user.
+	total_items- Total number of items
+	train_dict- dict of (user_idx) -> [item_idxs for test]
+	num_negative- number of negative samples per positive sample
+	"""
+	# random.seed(1)
+	user_done = {}
+
+	all_triples =[]
+	for pair in tuple_list:
+		
+		u = pair[0]
+		v = pair[1]
+
+		if u not in user_done.keys():
+			user_done[u] = True
+			all_triples.append((int(u), int(v), 1.0))
+
+			if(num_negative>0):
+				required = num_negative - len(train_dict[u])
+				existing_item_idxs = [int(idx) for idx in data_dict[u]]
+				neg_indexes = random.sample(range(0, total_items-1), required*4)
+				done = 0
+				#Keep adding until done
+				while done != required:
+					x = neg_indexes.pop(0)
+					if(x not in existing_item_idxs):
+						all_triples.append((int(u), int(x), 0.0))
+						done += 1
 	return all_triples
 
 def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=None, criterion=None, print_every =100,checkpoint_name = "Recommender_Network"):
@@ -211,7 +246,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			for iteration in range(tot_iters):
 				train_batch = get_random_from_tuple_list(data_tuples, batch_size)
 				# print 'Number of positive samples', len(train_batch)
-				train_batch = add_negative_samples(train_batch, data_dict, item_vecs.size()[0], num_negative)
+				train_batch = add_negative_samples_train(train_batch, data_dict, item_vecs.size()[0], num_negative)
 				# print 'Number of positive+negative samples', len(train_batch)
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
 				
@@ -253,20 +288,21 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				merged[user_idx] = train_dict[user_idx] + data_dict[user_idx]
 
 			print 'Adding negative samples to', len(data_tuples)
-			test_batch = add_negative_samples(data_tuples, merged, item_vecs.size()[0], num_negative)
+			test_batch = add_negative_samples_test(data_tuples, merged, item_vecs.size()[0], train_dict, num_negative)
 			print 'After adding', len(test_batch)
 			print test_batch[:20]
-			print 'Getting actual item vecs into place'
-			item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch)
+			print 'Running in batces of size', batch_size
 
-			print 'Correct till here with total items/user', item_data.size(), user_data.size()
-			#Run forward pass to get the results
-			# pred_target = rec_net(item_data, user_data)
-			# loss = criterion(pred_target, target)
+			for i in range(0, len(test_batch), batch_size):
+				item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
+				print 'Correct till here with total items/user', item_data.size(), user_data.size()
+				#Run forward pass to get the results
+				# pred_target = rec_net(item_data, user_data)
+				# loss = criterion(pred_target, target)
 
-			# print 'Test time loss is', loss.data[0]
+				# print 'Test time loss is', loss.data[0]
 
-			# compute_metrics(pred_target, test_batch, topK=num_negative/10)
+				# compute_metrics(pred_target, test_batch, topK=num_negative/10)
 			pass
 
 def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0, criterion=None, print_every = 10,checkpoint_name="Recommender_Network"):
