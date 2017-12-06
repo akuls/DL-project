@@ -128,7 +128,7 @@ def get_data_for_rcmdr(ae_item_vecs, index_triples):
 
 def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
 
-	random.seed(1)
+	# random.seed(1)
 	all_triples =[]
 	for pair in tuple_list:
 		u = pair[0]
@@ -172,7 +172,7 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 			training_size = len(data_tuples)
 			total_loss = 0.0
 			print 'Total training tuples', training_size
-			num_batches_per_epoch = training_size*(num_negative+1)/batch_size
+			num_batches_per_epoch = training_size/batch_size
 			tot_iters = num_epochs*num_batches_per_epoch
 			start_time = time.time()
 
@@ -184,7 +184,7 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
 				
 				optimizer.zero_grad()
-				
+				#Training a full batch
 				pred_target = rec_net(item_data, user_data)
 				loss = 0.0
 				loss = criterion(pred_target, target)
@@ -200,7 +200,7 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 					print "Total loss === ",total_loss/print_every
 					print np.squeeze(pred_target).data[0:6]
 					# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
-					total_loss = 0
+					total_loss = 0.0
 					torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
 			##############################END OF TRAIN###################################
 

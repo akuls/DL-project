@@ -185,7 +185,7 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 		return torch.nn.Embedding(num_users,embedding_dim)
 
 def get_random_from_tuple_list(data, batch_size=0):
-	random.seed(1)
+	# random.seed(1)
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
 
@@ -195,10 +195,14 @@ def save_user_vectors(user_vectors,filename):
 
 def loadAE(filename=None):
 	# Load AutoEncoder
-	if os.path.isfile(filename):
+	if filename is not None and os.path.isfile(filename):
 		AE = torch.load(filename)
 	else:
 		AE = md.AutoEncoder()
+
+	if HAVE_CUDA == True:
+		AE.cuda()
+		
 	return AE
 
 def loadOptimizer(MODEL, filename=None):
