@@ -16,6 +16,8 @@ import torch.autograd as ag
 sys.path.append('../../Config')
 from constants import *
 import random
+if HAVE_CUDA:
+	import torch.cuda as cuda
 
 def format_time(t):
 	out_str = ""
@@ -29,7 +31,7 @@ def format_time(t):
 	t = t/60
 	if t==0:
 		return out_str
-	h = t
+	h = int(t)
 	out_str = str(h) +"h " + out_str
 	return out_str
 	
@@ -183,7 +185,7 @@ def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
 		return torch.nn.Embedding(num_users,embedding_dim)
 
 def get_random_from_tuple_list(data, batch_size=0):
-	# random.seed(1)
+	random.seed(1)
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
 

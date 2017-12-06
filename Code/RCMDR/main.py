@@ -42,7 +42,7 @@ def get_data_for_rcmdr(ae_item_vecs, index_triples):
 
 def add_negative_samples(train_batch, data_dict, total_items, num_negative=0):
 
-	# random.seed(1)
+	random.seed(1)
 	all_triples =[]
 	for pair in train_batch:
 		u = pair[0]
@@ -119,7 +119,7 @@ def run_network(rec_net, AE, item_vecs, batch_size, mode, num_negative, num_epoc
 		rcmdr = md.FeedForward()
 		pass
 
-def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0, criterion=None, print_every = 100,checkpoint_name="Recommender_Network"):
+def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0, criterion=None, print_every = 10,checkpoint_name="Recommender_Network"):
 	if mode is None:
 		print 'No mode given'
 		return
@@ -138,7 +138,7 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 			rec_net = torch.load(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		else:
 			rec_net = rcmdr_model.FeedForward()
-
+			
 
 
 		if mode == 'train':
@@ -153,4 +153,4 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 if __name__ == '__main__':
 
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, criterion=nn.MSELoss())
+	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")

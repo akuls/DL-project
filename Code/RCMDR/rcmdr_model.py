@@ -44,6 +44,7 @@ class FeedForward(nn.Module):
 		nn.ReLU(),
 		
 		nn.Linear(100, 1),
+		nn.BatchNorm1d(1),
 		nn.Sigmoid()
 		)
 
