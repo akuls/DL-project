@@ -107,15 +107,15 @@ def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criteri
 
 	for iteration in range(tot_iters):
 		# Obtain batch data
-		# image_idxs = torch.LongTensor(random.sample(range(0, training_size-1), batch_size))
-		image_idxs = torch.LongTensor([0,0,0,0])
+		image_idxs = torch.LongTensor(random.sample(range(0, training_size-1), batch_size))
+		# image_idxs = torch.LongTensor([0,0,0,0])
+		if HAVE_CUDA == True:
+			image_idxs = image_idxs.cuda()
 		batch_data = image_variables[image_idxs]
 
 		optimizer.zero_grad()
 		#Training a full batch
 		pred_target = AE(batch_data)
-		print type(pred_target.data)
-		break
 		loss = 0.0
 		loss = criterion(pred_target, batch_data)
 		total_loss += loss.data[0]
@@ -289,7 +289,7 @@ def get_Image_Feature_maps():
 
 def main():
 	print 'Beginning to train AE'
-	train_AE(num_epochs = 1, print_every=10)
+	train_AE(num_epochs = 100, print_every=100)
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
