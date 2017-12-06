@@ -8,8 +8,14 @@ import rcmdr_model as rcmdr_model
 if HAVE_CUDA:
 	import torch.cuda as cuda
 
-def compute_PRF_HR(topN_list, ground_truth_dict, topK):
+def compute_PRF_HR(topK_list, ground_truth_dict, topK):
+	"""
+	topN_list- list containing the topK entries for each user in the list
+	ground_truth_dict- dictionary that contains (user_idx, item_idx) -> 1 or 0
+	topK - integer indicating how many topK entries we are considering per user
 
+	Computes precision, recall, MAP, HR@10
+	"""
 	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 	n = len(topK_list)
 	prev_user = -1
@@ -65,7 +71,10 @@ def compute_PRF_HR(topN_list, ground_truth_dict, topK):
 
 
 def compute_metrics(pred, triples, topK=10):
-
+	"""
+	pred- the predicted output from the network
+	triples- triple list containing (user_idx, item_idx, ground_truth)
+	"""
 	final_triple = [] #This will have (user_idx, pred_score, item_idx)
 	ground_truth_dict = {} #This will map (user_idx, item_idx) to (ground_truth of 1 or 0)
 
@@ -97,7 +106,12 @@ def compute_metrics(pred, triples, topK=10):
 	compute_PRF_HR(topK_list, ground_truth_dict, topK)
 
 def get_data_for_rcmdr(ae_item_vecs, index_triples):
-	
+	"""
+	ae_item_vecs- item vectors from the autoencoder
+	index_triples- triple list containing (user_idx, item_idx, ground_truth)
+
+	This function prepares data for the rcmdr_net and return user_data, item_data and targets
+	"""
 	item_data = None
 	user_data = None
 	targets = None
@@ -127,7 +141,13 @@ def get_data_for_rcmdr(ae_item_vecs, index_triples):
 	return item_data, user_data, targets
 
 def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
-
+	"""
+	tuple_list- The list of (user_idx, item_idx, 1)
+	data_dict- The list containing (user_idx) ->[item_idxs bought]. 
+	We need this to add items not in this list as negative samples for each user.
+	total_items- Total number of items
+	num_negative- number of negative samples per positive sample
+	"""
 	# random.seed(1)
 	all_triples =[]
 	for pair in tuple_list:
@@ -149,7 +169,17 @@ def add_negative_samples(tuple_list, data_dict, total_items, num_negative=0):
 	return all_triples
 
 def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=None, criterion=None, print_every =100,checkpoint_name = "Recommender_Network"):
-	
+	"""
+	rec_net- recommender net
+	item_vecs - Tensor of shape (N, D)
+	batch_size- input batch size for training
+	mode- train or test
+	num_negative- number of negative samples for each postive sample
+	num_epochs- total epochs to train
+	data_dict-  (user_idx)- [list of item_idx]
+	Runs the specified network with all the parameters in the mode specified
+	"""
+
 	if mode is None:
 		print 'No mode given'
 		return

@@ -45,6 +45,9 @@ def time_remaining(start_time, total_iterations, completed_iterations):
 	print "Time Remaining: ",format_time(remaining_time)
 
 def generate_user_id_file():
+	"""
+	One time run function
+	"""
 	datafile = open("../../Data/pairs.txt","r")
 	user_file = open("../../Data/user_ids.txt", "w")
 
@@ -56,6 +59,9 @@ def generate_user_id_file():
 	datafile.close()
 
 def generate_index_file_for(source, dest):
+	"""
+	One time run function
+	"""
 	input_file = open(source, "r")
 	output_file = open(dest, "w")
 	
@@ -78,9 +84,10 @@ def get_dicts_from_text(filename):
 	pass
 
 def generate_train_test_split(user_dict, item_dict, train_pct=0.8):
-	
+	"""
+	One time run function
+	"""
 	datafile = open("../../Data/pairs.txt","r")
-
 	user_item_train = open("../../Data/user_item_train.txt","w")
 	user_item_test = open("../../Data/user_item_test.txt","w")
 
@@ -106,7 +113,10 @@ def generate_train_test_split(user_dict, item_dict, train_pct=0.8):
 	pass
 
 def get_dict_from_index_mapping(filename):
-
+	"""
+	filename: test or train indexes file
+	returns a dict of {user_index:[item_indexes]}
+	"""
 	datafile = open(filename,"r")
 	data = {}
 	for l in datafile:
@@ -117,6 +127,14 @@ def get_dict_from_index_mapping(filename):
 	return data	
 
 def get_ids_from_file(filename):
+	"""
+	filename: user or item's id->index file 
+	For eg: 
+	BFCCCXXX003, 0
+	BDCGTRXX003, 1
+	DGF1CXXX003, 2
+	returns a list of image or user ids in order of indexes
+	"""
 	datafile = open(filename,"r")
 	data = []
 	for l in datafile:
@@ -125,12 +143,20 @@ def get_ids_from_file(filename):
 	return data
 
 def image_id_to_variable(item_id):
+	"""
+	input: item id
+	output: Torch variable of that image
+	"""
 	tt = transforms.ToTensor()
 	image = Image.open("../../Data/Resize_images_50/"+item_id.rstrip()+".jpg")			
 	item_image = ag.Variable(tt(image)).view(1,-1,SIDELENGTH,SIDELENGTH)
 	return item_image
 
 def image_ids_to_variable(item_ids):
+	"""
+	input: list of image ids
+	output: list of torch variables for all the images
+	"""
 	image_variables = ag.Variable(torch.zeros(len(item_ids),3,50,50))
 	for i in range(len(item_ids)):
 		item_variable = np.squeeze(image_id_to_variable(item_ids[i]))
@@ -145,7 +171,7 @@ def image_ids_to_variable(item_ids):
 	return image_variables
 
 
-def get_image_vectors(model,image_ids=None,filename=""):
+def get_image_vectors(model, image_ids=None, filename=""):
 	"""
 	model :: an autoencoder model that has a separate encoder and decoder function
 	image_ids :: The labels (item_ids) of the images
@@ -181,12 +207,21 @@ def get_image_vectors(model,image_ids=None,filename=""):
 	return image_vectors
 
 def get_user_vectors(filename="",embedding_dim=100,num_users=39387):
+	"""
+	input- the filename from where we load user vectors
+	embedding_dim- Length of user vector
+	num_users- number of users
+	"""
 	if os.path.isfile(filename):
 		return torch.load(filename)
 	else:
 		return torch.nn.Embedding(num_users,embedding_dim)
 
 def get_random_from_tuple_list(data, batch_size=0):
+	"""
+	data- [list of data]
+	batch_size- number of random samples needed
+	"""
 	# random.seed(1)
 	indexes = random.sample(range(0, len(data)-1), batch_size)
 	return [data[k] for k in indexes]
