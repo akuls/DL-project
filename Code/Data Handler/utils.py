@@ -201,15 +201,16 @@ def loadAE(filename=None):
 		AE = md.AutoEncoder()
 
 	if HAVE_CUDA == True:
-		AE.cuda()
-		
+		AE = AE.cuda()
+
 	return AE
 
 def loadOptimizer(MODEL, filename=None):
+	optimizer = optim.Adam(MODEL.parameters(), lr=0.001)
 	if filename is not None and os.path.isfile(filename):
-		optimizer = torch.load(filename)
-	else:
-		optimizer = optim.Adam(MODEL.parameters(), lr=0.001)
+		optimizer.load_state_dict(torch.load(filename))
+	# else:
+	# 	optimizer = optim.Adam(MODEL.parameters(), lr=0.001)
 
 	return optimizer
 

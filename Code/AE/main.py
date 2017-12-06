@@ -96,41 +96,8 @@ def get_user_item_pair_buckets():
 
 # 	return user_vts, AE, optimizer
 
-def get_data_for_AE(item_ids):
-	
-	image_variables = image_ids_to_variable(item_ids)
-
-	item_data = None
-	user_data = None
-	targets = None
-	flag = 0
-
-	for triple in index_triples:
-
-		u = triple[0]
-		v = triple[1]
-		val = triple[2]
-
-		#Get real valued vectors for these
-		user = ag.Variable(torch.LongTensor([u])).view(1,1)
-		item = ae_item_vecs[v].view(1,100)
-		target = ag.Variable(torch.FloatTensor([val]), requires_grad=False)
-
-		if(flag == 0):
-			item_data = item
-			user_data = user
-			targets = target
-			flag = 1
-		else:
-			item_data = torch.cat((item_data, item),0)
-			user_data = torch.cat((user_data, user),0)
-			targets = torch.cat((targets, target),0)
-
-	return item_data, user_data, targets
-
 def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criterion, print_every =100,checkpoint_name = "auto_encoder"):
-	return
-
+	
 	training_size = len(data)
 	total_loss = 0.0
 	print 'Total training data', training_size
@@ -139,38 +106,44 @@ def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criteri
 	start_time = time.time()
 
 	for iteration in range(tot_iters):
-		train_batch = get_random_from_tuple_list(data, batch_size)
-		item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
-		
+		# Obtain batch data
+		# image_idxs = torch.LongTensor(random.sample(range(0, training_size-1), batch_size))
+		image_idxs = torch.LongTensor([0,0,0,0])
+		batch_data = image_variables[image_idxs]
+
 		optimizer.zero_grad()
 		#Training a full batch
-		pred_target = AE(item_data, user_data)
+		pred_target = AE(batch_data)
+		print type(pred_target.data)
+		break
 		loss = 0.0
-		loss = criterion(pred_target, target)
+		loss = criterion(pred_target, batch_data)
 		total_loss += loss.data[0]
 		loss.backward()
 		optimizer.step()
 		
 		# Print loss after ever batch of training
-		if iteration % print_every == 0:
+		if (iteration+1) % print_every == 0 or (iteration+1) == tot_iters:
 			print "============================================"
-			print iteration, "of ", tot_iters
+			print type(pred_target.data)
+			print iteration+1, "of ", tot_iters
 			time_remaining(start_time, tot_iters, iteration+1)
 			print "Total loss === ",total_loss/print_every
-			print np.squeeze(pred_target).data[0:6]
-			# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
 			total_loss = 0.0
-			torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
+			torch.save(AE,os.getcwd()+"/Checkpoints/"+checkpoint_name)
+			torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
+
 
 def train_AE(batch_size=32, num_epochs=10, criterion=nn.MSELoss(), print_every = 10,checkpoint_name="auto_encoder"):
 	
 	AE = loadAE('Checkpoints/'+ checkpoint_name)
 	optimizer = loadOptimizer(AE,filename='Checkpoints/optim_'+ checkpoint_name)
-	if HAVE_CUDA == True:
-		criterion.cuda()
 	data = get_ids_from_file("../../Data/item_to_index.txt")
 	image_variables = image_ids_to_variable(data)
-	print image_variables.size()
+	if HAVE_CUDA == True:
+		criterion = criterion.cuda()
+		image_variables = image_variables.cuda()
+
 	run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criterion, print_every =print_every,checkpoint_name = checkpoint_name)
 
 
@@ -316,7 +289,7 @@ def get_Image_Feature_maps():
 
 def main():
 	print 'Beginning to train AE'
-	train_AE()
+	train_AE(num_epochs = 1, print_every=10)
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
