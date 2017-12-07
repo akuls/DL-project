@@ -8,7 +8,7 @@ import rcmdr_model as rcmdr_model
 if HAVE_CUDA:
 	import torch.cuda as cuda
 
-def compute_PRF_HR(topK_list, ground_truth_dict, topK):
+def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	"""
 	topN_list- list containing the topK entries for each user in the list
 	ground_truth_dict- dictionary that contains (user_idx, item_idx) -> 1 or 0
@@ -16,7 +16,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, topK):
 
 	Computes precision, recall, MAP, HR@10
 	"""
-	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 	print "Test dict length", len(test_dict)
 	n = len(topK_list)
 	prev_user = -1
@@ -66,13 +66,14 @@ def compute_PRF_HR(topK_list, ground_truth_dict, topK):
 	num_users += 1
 
 	MAP /= float(num_users)
-	print 'MAP is', MAP
-	print total_hits/float(len(test_dict))
-	print n
-	print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
+	# print 'MAP is', MAP
+	# print total_hits/float(len(test_dict))
+	# print n
+	# print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
+	return sum(user_precision)/num_users
 
 
-def compute_metrics(pred, triples, topK=10):
+def compute_metrics(pred, triples, test_dict, topK=10):
 	"""
 	pred- the predicted output from the network
 	triples- triple list containing (user_idx, item_idx, ground_truth)
@@ -102,10 +103,10 @@ def compute_metrics(pred, triples, topK=10):
 
 		else:
 			i += 1
-	print topK_list[0:topK]
+	# print topK_list[0:topK]
 	#At this point, topN_list has topK for all users sorted in descending order
 	#Use this and the ground truth dictionary to compute metrics for each/all users
-	compute_PRF_HR(topK_list, ground_truth_dict, topK)
+	return compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK)
 
 def get_data_for_rcmdr(ae_item_vecs, index_triples):
 	"""
@@ -299,10 +300,12 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			print test_batch[:20]
 			print 'Running in batches of size', batch_size
 			
-			all_pred = ag.Variable(torch.FloatTensor(len(test_batch),1).zero_())
+			# all_pred = ag.Variable(torch.FloatTensor(len(test_batch),1).zero_())
 			if HAVE_CUDA:
 				all_pred = all_pred.cuda()
 			start_time = time.time()
+			batch_size *= num_negative
+			HR = 0.0
 			for i in range(0, len(test_batch), batch_size):
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
 				if HAVE_CUDA:
@@ -317,12 +320,16 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				print 'Test time loss is', loss.data[0]
 				print 'Pred target shape', pred_target.size()
 
-				all_pred[i:i+batch_size] = pred_target
+				HR += compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=10)
+
+				# all_pred[i:i+batch_size] = pred_target
 
 				#if(i>100):
 				#	break
+			HR /= (len(test_batch)/batch_size)
 			print "Time taken to predict: ", time.time()-start_time
-			compute_metrics(all_pred, test_batch, topK=10)
+			print "Hit rate is", HR
+			# compute_metrics(all_pred, test_batch, topK=10)
 			pass
 
 def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0, criterion=None, print_every = 10,checkpoint_name="Recommender_Network"):
