@@ -17,6 +17,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, topK):
 	Computes precision, recall, MAP, HR@10
 	"""
 	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+	print "Test dict length", len(test_dict)
 	n = len(topK_list)
 	prev_user = -1
 	tp = 0
@@ -35,10 +36,10 @@ def compute_PRF_HR(topK_list, ground_truth_dict, topK):
 
 		if u != prev_user:
 			if(prev_user != -1):
-				print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
+				# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
 				user_AP.append((prev_user, temp_ap))
 				user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-				user_recall.append((prev_user, float(fp)/float(len(test_dict[prev_user]))))
+				user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
 				MAP += temp_ap
 				num_users += 1
 				total_hits += tp
@@ -60,13 +61,14 @@ def compute_PRF_HR(topK_list, ground_truth_dict, topK):
 	print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
 	user_AP.append((prev_user, temp_ap))
 	user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-	user_recall.append((prev_user, float(fp)/float(len(test_dict[prev_user]))))
+	user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
 	MAP += temp_ap
 	num_users += 1
 
 	MAP /= float(num_users)
 	print 'MAP is', MAP
-
+	print total_hits/float(len(test_dict))
+	print n
 	print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
 
 
@@ -81,7 +83,7 @@ def compute_metrics(pred, triples, topK=10):
 	n = len(triples)
 	for i in range(n):
 		u, v, ground_truth_dict[(u, v)] = triples[i]
-		final_triple.append((u, pred.data[i], v))
+		final_triple.append((u, pred.data[i][0], v))
 		
 	#Sort them while keeping user's data together
 	sorted_triple = sorted(final_triple, reverse=True)
@@ -93,14 +95,14 @@ def compute_metrics(pred, triples, topK=10):
 	while(i<n):
 		u, _, _ = sorted_triple[i]
 		if(u != prev_user):
-			print 'New user at position', i 
+			# print 'New user at position', i 
 			prev_user = u
 			topK_list.extend(sorted_triple[i:i+topK])
 			i += topK
 
 		else:
 			i += 1
-
+	print topK_list[0:topK]
 	#At this point, topN_list has topK for all users sorted in descending order
 	#Use this and the ground truth dictionary to compute metrics for each/all users
 	compute_PRF_HR(topK_list, ground_truth_dict, topK)
@@ -166,15 +168,16 @@ def add_negative_samples_train(tuple_list, data_dict, total_items, num_negative=
 				if(x not in existing_item_idxs):
 					all_triples.append((int(u), int(x), 0.0))
 					done += 1
+		
 	return all_triples
 
-def add_negative_samples_test(tuple_list, data_dict, total_items, train_dict, num_negative=0):
+def add_negative_samples_test(tuple_list, data_dict, total_items, test_dict, num_negative=0):
 	"""
 	tuple_list- The list of (user_idx, item_idx, 1)
 	data_dict- dict containing (user_idx) ->[item_idxs bought]. 
 	We need this to add items not in this list as negative samples for each user.
 	total_items- Total number of items
-	train_dict- dict of (user_idx) -> [item_idxs for test]
+	test_dict- dict of (user_idx) -> [item_idxs for test]
 	num_negative- number of negative samples per positive sample
 	"""
 	# random.seed(1)
@@ -191,7 +194,8 @@ def add_negative_samples_test(tuple_list, data_dict, total_items, train_dict, nu
 			all_triples.append((int(u), int(v), 1.0))
 
 			if(num_negative>0):
-				required = num_negative - len(train_dict[u])
+				required = num_negative - len(test_dict[u])
+				# print u, num_negative, required
 				existing_item_idxs = [int(idx) for idx in data_dict[u]]
 				neg_indexes = random.sample(range(0, total_items-1), required*4)
 				done = 0
@@ -201,6 +205,8 @@ def add_negative_samples_test(tuple_list, data_dict, total_items, train_dict, nu
 					if(x not in existing_item_idxs):
 						all_triples.append((int(u), int(x), 0.0))
 						done += 1
+		else:
+			all_triples.append((int(u), int(v), 1.0))
 	return all_triples
 
 def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=None, criterion=None, print_every =100,checkpoint_name = "Recommender_Network"):
@@ -288,21 +294,35 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				merged[user_idx] = train_dict[user_idx] + data_dict[user_idx]
 
 			print 'Adding negative samples to', len(data_tuples)
-			test_batch = add_negative_samples_test(data_tuples, merged, item_vecs.size()[0], train_dict, num_negative)
+			test_batch = add_negative_samples_test(data_tuples, merged, item_vecs.size()[0], data_dict, num_negative)
 			print 'After adding', len(test_batch)
 			print test_batch[:20]
-			print 'Running in batces of size', batch_size
-
+			print 'Running in batches of size', batch_size
+			
+			all_pred = ag.Variable(torch.FloatTensor(len(test_batch),1).zero_())
+			if HAVE_CUDA:
+				all_pred = all_pred.cuda()
+			start_time = time.time()
 			for i in range(0, len(test_batch), batch_size):
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
+				if HAVE_CUDA:
+					item_data = item_data.cuda()
+					user_data = user_data.cuda()
+					target = target.cuda()
 				print 'Correct till here with total items/user', item_data.size(), user_data.size()
+				
 				#Run forward pass to get the results
-				# pred_target = rec_net(item_data, user_data)
-				# loss = criterion(pred_target, target)
+				pred_target = rec_net(item_data, user_data)
+				loss = criterion(pred_target, target)
+				print 'Test time loss is', loss.data[0]
+				print 'Pred target shape', pred_target.size()
 
-				# print 'Test time loss is', loss.data[0]
+				all_pred[i:i+batch_size] = pred_target
 
-				# compute_metrics(pred_target, test_batch, topK=num_negative/10)
+				#if(i>100):
+				#	break
+			print "Time taken to predict: ", time.time()-start_time
+			compute_metrics(all_pred, test_batch, topK=10)
 			pass
 
 def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0, criterion=None, print_every = 10,checkpoint_name="Recommender_Network"):
@@ -314,11 +334,11 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 		#Call util to get the vectors and optimizer
 		AE = loadAE('../AE/Checkpoints/auto_encoder')
 		rec_net = loadrec_net(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		optimizer = loadOptimizer(MODEL=rec_net)
+		optimizer = loadOptimizer(rec_net,os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading item item_vecs'
 		pt = time.time()
-		ae_item_vecs = get_image_vectors(AE,filename="../../Data/image_vectors")
+		ae_item_vecs = get_image_vectors(AE.cpu(),filename="../../Data/image_vectors")
 		et = time.time()
 		print 'Takes', et-pt, 'seconds'
 
@@ -336,5 +356,5 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=1,print_every=100, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")
-	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=5, criterion=nn.MSELoss())
+	# run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=1,print_every=100, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")
+	run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Recommender_Network_New")
