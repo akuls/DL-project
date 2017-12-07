@@ -39,7 +39,8 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 				# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
 				user_AP.append((prev_user, temp_ap))
 				user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-				user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
+				num_user_test_items = float(len(test_dict[str(prev_user)]))
+				user_recall.append((prev_user, (num_user_test_items-float(tp))/num_user_test_items))
 				MAP += temp_ap
 				num_users += 1
 				total_hits += tp
@@ -70,7 +71,8 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	# print total_hits/float(len(test_dict))
 	# print n
 	# print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
-	return sum(user_precision)/num_users
+	# return sum(user_precision)/num_users
+	return total_hits/(topK*float(num_users))
 
 
 def compute_metrics(pred, triples, test_dict, topK=10):
@@ -301,8 +303,8 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			print 'Running in batches of size', batch_size
 			
 			# all_pred = ag.Variable(torch.FloatTensor(len(test_batch),1).zero_())
-			if HAVE_CUDA:
-				all_pred = all_pred.cuda()
+			#if HAVE_CUDA:
+			#	all_pred = all_pred.cuda()
 			start_time = time.time()
 			batch_size *= num_negative
 			HR = 0.0
