@@ -49,6 +49,7 @@ class FeedForward(nn.Module):
 		)
 
 	def forward(self, item_vec, user_idx):
+		akul
 		user_vec = np.squeeze(self.user_embed(user_idx))
 		x = self.combine_user_data(user_vec,item_vec)
 		# print x
