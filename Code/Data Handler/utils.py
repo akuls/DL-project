@@ -263,6 +263,27 @@ def loadOptimizer(MODEL, filename=None):
 
 	return optimizer
 
+def loadDeepCNN_net(filename=None):
+	# Load AutoEncoder
+	if filename is not None and os.path.isfile(filename):
+		rec_net = torch.load(filename)
+	else:
+		rec_net = rmd.FeedForwardDeepCNN()
+
+	if HAVE_CUDA == True:
+		rec_net = rec_net.cuda()
+
+	return rec_net
+
+def get_cnn_image_vectors(image_ids=None):
+	"""
+	image_ids :: The labels (item_ids) of the images
+	"""
+	
+	#Load all the image vectors into memory using torch.load
+
+	#Then rearrange them using the item indexes and return the vectors
+
 if __name__ == '__main__':
 	#One time run
 	# generate_user_id_file()

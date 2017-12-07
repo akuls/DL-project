@@ -49,10 +49,70 @@ class FeedForward(nn.Module):
 		)
 
 	def forward(self, item_vec, user_idx):
-		akul
 		user_vec = np.squeeze(self.user_embed(user_idx))
 		x = self.combine_user_data(user_vec,item_vec)
 		# print x
+		y_pred = self.network(x)
+		return y_pred
+
+	def get_embeddding(self):
+		return self.user_embed
+
+	def set_user_embed(self,embed):
+		self.user_embed = embed
+
+	def combine_user_data(self, user, item):
+		res = torch.cat((user, item),1)
+		return res
+
+	def print_user_data(self,user_idx):
+		user_vec = np.squeeze(self.user_embed(user_idx))
+		print user_vec
+
+
+class FeedForwardDeepCNN(nn.Module):
+	"""docstring for FeedForwardDeepCNNFeat"""
+	def __init__(self, embedding_dim=512, num_users=39387):
+		super(FeedForwardDeepCNN, self).__init__()
+		
+		self.user_embed = nn.Embedding(num_users, embedding_dim)
+		
+		self.itemReduce = nn.Sequential(
+		nn.Linear(4096, 2048),
+		nn.BatchNorm1d(2048),
+		nn.ReLU(),
+
+		nn.Linear(2048, 1024),
+		nn.BatchNorm1d(1024),
+		nn.ReLU(),
+		
+		nn.Linear(1024, 512)
+		)
+
+		self.network = nn.Sequential(
+		nn.Linear(1024, 512),
+		nn.BatchNorm1d(512),
+		nn.ReLU(),
+
+		nn.Linear(512, 256),
+		nn.BatchNorm1d(256),
+		nn.ReLU(),
+		
+		nn.Linear(256, 100),
+		nn.BatchNorm1d(100),
+		nn.ReLU(),
+
+		nn.Linear(100, 1),
+		nn.BatchNorm1d(1),
+		nn.Sigmoid()
+		)
+
+	def forward(self, item_vec, user_idx):
+		user_vec = np.squeeze(self.user_embed(user_idx))
+		
+		#Redundant item vectors could be there here for each user. Try to reduce this if possible. 
+		reduced_items = self.network(item_vec)
+		x = self.combine_user_data(user_vec, reduced_items)
 		y_pred = self.network(x)
 		return y_pred
 
