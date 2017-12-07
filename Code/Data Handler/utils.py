@@ -242,6 +242,18 @@ def loadAE(filename=None):
 
 	return AE
 
+def loadAE_exp(filename=None):
+	# Load AutoEncoder
+	if filename is not None and os.path.isfile(filename):
+		AE = torch.load(filename)
+	else:
+		AE = md.AutoEncoder_experimental()
+
+	if HAVE_CUDA == True:
+		AE = AE.cuda()
+
+	return AE
+
 def loadrec_net(filename=None):
 	# Load AutoEncoder
 	if filename is not None and os.path.isfile(filename):

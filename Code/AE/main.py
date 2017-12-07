@@ -35,6 +35,7 @@ def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criteri
 		if HAVE_CUDA == True:
 			image_idxs = image_idxs.cuda()
 		batch_data = image_variables[image_idxs]
+		batch_data.view(-1,1,SIDELENGTH,SIDELENGTH)
 
 		optimizer.zero_grad()
 		#Training a full batch
@@ -59,7 +60,7 @@ def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criteri
 
 def train_AE(batch_size=32, num_epochs=10, criterion=nn.MSELoss(), print_every = 10,checkpoint_name="auto_encoder"):
 	
-	AE = loadAE('Checkpoints/'+ checkpoint_name)
+	AE = loadAE_exp('Checkpoints/'+ checkpoint_name)
 	optimizer = loadOptimizer(AE,filename='Checkpoints/optim_'+ checkpoint_name)
 	data = get_ids_from_file("../../Data/item_to_index.txt")
 	image_variables = image_ids_to_variable(data)
@@ -115,7 +116,8 @@ def get_Image_Feature_maps():
 
 def main():
 	print 'Beginning to train AE'
-	train_AE(num_epochs = 100, print_every=100)
+	# train_AE(num_epochs = 100, print_every=100)
+	train_AE(num_epochs = 100, print_every=100, checkpoint_name="auto_encoder_exp")
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
