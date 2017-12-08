@@ -17,7 +17,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	Computes precision, recall, MAP, HR@10
 	"""
 	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
-	print "Test dict length", len(test_dict)
+	# print "Test dict length", len(test_dict)
 	n = len(topK_list)
 	prev_user = -1
 	tp = 0
@@ -59,7 +59,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 		temp_ap += float(tp)/float(i-start+1)
 
 	#Last user outside the loop	
-	print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
+	# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
 	user_AP.append((prev_user, temp_ap))
 	user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
 	user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
@@ -192,13 +192,14 @@ def add_negative_samples_test(tuple_list, data_dict, total_items, test_dict, num
 		u = pair[0]
 		v = pair[1]
 
-		if u not in user_done.keys():
+		if u not in user_done:
+			# if int(u)%1000 == 0:
+				# print 'At user idx', u
 			user_done[u] = True
 			all_triples.append((int(u), int(v), 1.0))
 
 			if(num_negative>0):
 				required = num_negative - len(test_dict[u])
-				# print u, num_negative, required
 				existing_item_idxs = [int(idx) for idx in data_dict[u]]
 				neg_indexes = random.sample(range(0, total_items-1), required*4)
 				done = 0
@@ -362,7 +363,41 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 		
 		run_network(rec_net, optimizer, cnn_item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every, checkpoint_name=checkpoint_name)
 
+def run_random_test(batch_size=32, num_negative=50):
+	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+	train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
+
+	print 'Got data'
+	#Create tuple list from dict
+	data_tuples = []
+	for user, items in test_dict.iteritems():
+		for v in items:
+			data_tuples.append((user, v))
+
+	print 'Merging'
+	#Merge with test dict for negative sampling
+	merged = {}
+	for user_idx, item_idxs in train_dict.iteritems():
+		merged[user_idx] = train_dict[user_idx] + test_dict[user_idx]
+
+	print 'Now adding negative samples'
+	test_batch = add_negative_samples_test(data_tuples, merged, 23033, test_dict, num_negative)
+	print 'Added negative samples and now length is', len(test_batch)
+
+	HR = 0.0
+	start_time = time.time()
+	for i in range(0, len(test_batch), batch_size):
+		# Randomly predict 
+		pred_target = np.random.uniform(0.0, 1.0, (batch_size, 1))
+		x = compute_metrics(pred_target, test_batch[i:i+batch_size], test_dict, topK=10)
+		# print 'i', x
+		HR += x
+
+	HR /= (len(test_batch)/batch_size)
+	print "Time taken to predict: ", time.time()-start_time
+	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
+	# run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
 	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
+	run_random_test(batch_size=32, num_negative=50)
