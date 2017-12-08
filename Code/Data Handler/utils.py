@@ -18,6 +18,7 @@ import torch.autograd as ag
 sys.path.append('../../Config')
 from constants import *
 import random
+import struct
 if HAVE_CUDA:
 	import torch.cuda as cuda
 
@@ -275,14 +276,65 @@ def loadDeepCNN_net(filename=None):
 
 	return rec_net
 
-def get_cnn_image_vectors(image_ids=None):
+def get_ids_to_index_dict_from_file(filename):
 	"""
-	image_ids :: The labels (item_ids) of the images
+	filename: user or item's id->index file 
+	For eg: 
+	BFCCCXXX003, 0
+	BDCGTRXX003, 1
+	DGF1CXXX003, 2
+	returns a list of image or user ids in order of indexes
 	"""
-	
-	#Load all the image vectors into memory using torch.load
+	datafile = open(filename,"r")
+	data = {}
+	for l in datafile:
+		Id, Idx = l.split(',')
+		data[Id] = Idx.rstrip()
+	return data
 
-	#Then rearrange them using the item indexes and return the vectors
+def store_CNN_image_vecs_in_torch_file():
+	"""
+	Reads data from the binary file and returns the 
+	"""
+	image_id_to_idx = get_ids_to_index_dict_from_file("../../Data/item_to_index.txt")
+
+	#Load all the image vectors into memory
+	image_vectors = ag.Variable(torch.zeros(data_len, 4096))
+	
+	f = open("../../Data/CNN_image_features/raw_feat.b", 'rb')
+	while True:
+		image_id = f.read(10)
+		if image_id == '':
+			break
+		#Initialize to torch variable/tensor
+		feature = []
+		for i in range(4096):
+			feature.append(struct.unpack('f', f.read(4)))
+		if image_id in image_id_to_idx.keys():
+			image_vectors[image_id_to_idx[image_id]] = feature
+	f.close()
+
+	#Save the image vectors as torch variable
+	torch.save(image_vectors,"../../Data/CNN_image_features/indexed_CNN_feat")
+
+def get_cnn_image_vectors():
+	return torch.load("../../Data/CNN_image_features/indexed_CNN_feat")
+
+def run_random_baseline(num_items=23033, K=10):
+	image_ids = get_ids_from_file("../../Data/item_to_index.txt")
+	train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
+	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
+	hits = 0
+	num_users = len(test_dict.keys())
+
+	for user_idx in test_dict.keys():
+		pred_out = random.sample(range(0, num_items), K)
+		
+		for item in pred_out:
+			if str(item) in train_dict[user_idx] or str(item) in test_dict[user_idx]:
+				hits += 1
+
+	print 'Average HR@', K, 'using random recommendation is', float(hits)/(K*num_users) 
 
 if __name__ == '__main__':
 	#One time run
@@ -300,4 +352,10 @@ if __name__ == '__main__':
 	# user_ids_in_order_of_idx = get_ids_from_file("../../Data/user_to_index.txt")
 	# print len(user_ids_in_order_of_idx)
 
-	AE = loadAE('../AE/Checkpoints/auto_encoder2')
+	# AE = loadAE('../AE/Checkpoints/auto_encoder2')
+
+	#One time run for CNN features to generate indexed feature vectors
+	# store_CNN_image_vecs_in_torch_file()
+
+	# Random baseline
+	run_random_baseline(K=10)
