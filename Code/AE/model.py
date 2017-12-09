@@ -67,7 +67,7 @@ class AutoEncoder(nn.Module):
 class AutoEncoder_experimental(nn.Module):
 	"""docstring for AutoEncoder"""
 	def __init__(self):
-		super(AutoEncoder, self).__init__()
+		super(AutoEncoder_experimental, self).__init__()
 		self.encode1 = nn.Sequential(
 			nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1),
 			nn.ReLU(True),
@@ -97,8 +97,12 @@ class AutoEncoder_experimental(nn.Module):
 		)
 
 	def forward(self, x):
+		N,C,H,W = x.size()
+		#print "input received", x
 		y = self.encoder(x)
+		#print "intermediate", y
 		x_cap = self.decoder(y)
+		#print "resultant", x_cap
 		return x_cap
 
 	def Encode(self,x):

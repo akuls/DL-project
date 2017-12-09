@@ -30,21 +30,40 @@ def run_AE(AE, optimizer, data, image_variables, batch_size, num_epochs, criteri
 
 	for iteration in range(tot_iters):
 		# Obtain batch data
+		#random.seed(1)
 		image_idxs = torch.LongTensor(random.sample(range(0, training_size-1), batch_size))
 		# image_idxs = torch.LongTensor([0,0,0,0])
 		if HAVE_CUDA == True:
 			image_idxs = image_idxs.cuda()
 		batch_data = image_variables[image_idxs]
-		batch_data.view(-1,1,SIDELENGTH,SIDELENGTH)
+		#batch_data = batch_data.view(-1,1,SIDELENGTH,SIDELENGTH)
+		new_batch_data = (batch_data.data).view(-1,1,SIDELENGTH,SIDELENGTH)
+		new_batch_data = ag.Variable(new_batch_data)
 
 		optimizer.zero_grad()
 		#Training a full batch
-		pred_target = AE(batch_data)
+		# print batch_data.size()
+		
+		#for x in AE.parameters():
+		#	print x
+		#	break
+		#print "actual data", batch_data
+		pred_target = AE(new_batch_data)
 		loss = 0.0
-		loss = criterion(pred_target, batch_data)
+		loss = criterion(pred_target, new_batch_data)
 		total_loss += loss.data[0]
 		loss.backward()
+		#for x in AE.parameters():
+		#	print x.grad
+		#	break
 		optimizer.step()
+		#for x in AE.parameters():
+		#	print x
+		#	break
+		#print batch_data
+		#print pred_target
+		#print loss
+		#break
 		
 		# Print loss after ever batch of training
 		if (iteration+1) % print_every == 0 or (iteration+1) == tot_iters:
@@ -117,7 +136,7 @@ def get_Image_Feature_maps():
 def main():
 	print 'Beginning to train AE'
 	# train_AE(num_epochs = 100, print_every=100)
-	train_AE(num_epochs = 100, print_every=100, checkpoint_name="auto_encoder_exp")
+	train_AE(num_epochs = 100, print_every=100, checkpoint_name="auto_encoder_exp_2")
 	# loss_val = begin_training(num_epochs = 10,print_every=10)
 	# np.save("loss.npy",loss_val)
 	# print np.load("loss.npy")
