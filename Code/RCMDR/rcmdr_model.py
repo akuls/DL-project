@@ -132,26 +132,32 @@ class JointNet(nn.Module):
 		y_item_CNN = self.item_CNN(images)
 		y_item_CNN = y_item_CNN.view(y_item_CNN.size()[0], y_item_CNN.size()[1]*y_item_CNN.size()[2]*y_item_CNN.size()[3])
 		# print 'Item net output size', y_item_CNN.size()
-		
+
 		y_user_FCN = self.user_FCN(user_vec)
 		# print 'User net output size', y_user_FCN.size()
 
 		x_user_item_FCN = self.combine_user_data(y_user_FCN, y_item_CNN)
 		# print 'User_item input size', x_user_item_FCN.size()
 
-		y_pred = self.user_item_FCN(x_user_item_FCN)
+		# y_pred = self.user_item_FCN(x_user_item_FCN)
+		y_pred = self.cosine_similarity(y_user_FCN, y_item_CNN)
 		return y_pred
 
 	def get_embeddding(self):
 		return self.user_embed
 
-	def set_user_embed(self,embed):
+	def set_user_embed(self, embed):
 		self.user_embed = embed
 
 	def combine_user_data(self, user, item):
 		res = torch.cat((user, item),1)
 		return res
 
-	def print_user_data(self,user_idx):
+	def print_user_data(self, user_idx):
 		user_vec = np.squeeze(self.user_embed(user_idx))
 		print user_vec
+
+	def cosine_similarity(self, v1, v2):
+		res = v1*v2
+		# res = res.div_(torch.norm(res, 2))
+		return res
