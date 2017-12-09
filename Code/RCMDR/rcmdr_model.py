@@ -70,26 +70,45 @@ class FeedForward(nn.Module):
 		print user_vec
 
 
-class FeedForwardDeepCNN(nn.Module):
-	"""docstring for FeedForwardDeepCNNFeat"""
-	def __init__(self, embedding_dim=512, num_users=39387):
-		super(FeedForwardDeepCNN, self).__init__()
-		
+class JointNet(nn.Module):
+	"""docstring for JointNet"""
+	def __init__(self, embedding_dim=256, num_users=39387):
+		super(JointNet, self).__init__()
 		self.user_embed = nn.Embedding(num_users, embedding_dim)
 		
-		self.itemReduce = nn.Sequential(
-		nn.Linear(4096, 2048),
-		nn.BatchNorm1d(2048),
-		nn.ReLU(),
+		#Image network
+		self.item_CNN = nn.Sequential(
+		nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1),
+		nn.ReLU(True),
+		#Result- 48*48
+		nn.MaxPool2d(kernel_size=2, stride=2),
+		#Resut- 24*24
 
-		nn.Linear(2048, 1024),
-		nn.BatchNorm1d(1024),
-		nn.ReLU(),
-		
-		nn.Linear(1024, 512)
+		nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, stride=1),
+		nn.ReLU(True),
+		#Result- 22*22
+
+		nn.Conv2d(in_channels=256, out_channels=1, kernel_size=7, stride=1),
+		nn.ReLU(True)
+		#Result- 16*16
 		)
 
-		self.network = nn.Sequential(
+		#User network
+		self.user_FCN = nn.Sequential(
+		nn.Linear(embedding_dim, 512),
+		nn.BatchNorm1d(512),
+		nn.ReLU(),
+
+		nn.Linear(512, 256),
+		nn.BatchNorm1d(256)
+		)
+
+		#Recommender network
+		self.user_item_FCN = nn.Sequential(
+		nn.Linear(512, 1024),
+		nn.BatchNorm1d(1024),
+		nn.ReLU(),
+
 		nn.Linear(1024, 512),
 		nn.BatchNorm1d(512),
 		nn.ReLU(),
@@ -97,23 +116,30 @@ class FeedForwardDeepCNN(nn.Module):
 		nn.Linear(512, 256),
 		nn.BatchNorm1d(256),
 		nn.ReLU(),
-		
-		nn.Linear(256, 100),
-		nn.BatchNorm1d(100),
+
+		nn.Linear(256, 64),
+		nn.BatchNorm1d(64),
 		nn.ReLU(),
 
-		nn.Linear(100, 1),
+		nn.Linear(64, 1),
 		nn.BatchNorm1d(1),
 		nn.Sigmoid()
 		)
 
-	def forward(self, item_vec, user_idx):
+	def forward(self, images, user_idx):
 		user_vec = np.squeeze(self.user_embed(user_idx))
+
+		y_item_CNN = self.item_CNN(images)
+		y_item_CNN = y_item_CNN.view(y_item_CNN.size()[0], y_item_CNN.size()[1]*y_item_CNN.size()[2]*y_item_CNN.size()[3])
+		# print 'Item net output size', y_item_CNN.size()
 		
-		#Redundant item vectors could be there here for each user. Try to reduce this if possible. 
-		reduced_items = self.network(item_vec)
-		x = self.combine_user_data(user_vec, reduced_items)
-		y_pred = self.network(x)
+		y_user_FCN = self.user_FCN(user_vec)
+		# print 'User net output size', y_user_FCN.size()
+
+		x_user_item_FCN = self.combine_user_data(y_user_FCN, y_item_CNN)
+		# print 'User_item input size', x_user_item_FCN.size()
+
+		y_pred = self.user_item_FCN(x_user_item_FCN)
 		return y_pred
 
 	def get_embeddding(self):

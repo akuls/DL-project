@@ -130,7 +130,7 @@ def get_data_for_rcmdr(cnn_item_vecs, index_triples):
 
 		#Get real valued vectors for these
 		user = ag.Variable(torch.LongTensor([u])).view(1,1)
-		item = cnn_item_vecs[v].view(1, 4096)
+		item = cnn_item_vecs[v].view(1, 3, 50, 50)
 		target = ag.Variable(torch.FloatTensor([val]), requires_grad=False)
 
 		if(flag == 0):
@@ -252,14 +252,16 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			num_batches_per_epoch = training_size/batch_size
 			tot_iters = num_epochs*num_batches_per_epoch
 			start_time = time.time()
+			num_items = item_vecs.size()[0]
 
 			for iteration in range(tot_iters):
 				train_batch = get_random_from_tuple_list(data_tuples, batch_size)
 				# print 'Number of positive samples', len(train_batch)
-				train_batch = add_negative_samples_train(train_batch, data_dict, item_vecs.size()[0], num_negative)
+				train_batch = add_negative_samples_train(train_batch, data_dict, num_items, num_negative)
 				# print 'Number of positive+negative samples', len(train_batch)
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
 				
+				# print 'All data collected', item_data.size(), user_data.size(), target.size()
 				if HAVE_CUDA:
 					item_data = item_data.cuda()
 					user_data = user_data.cuda()
@@ -280,11 +282,12 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 					print iteration+1, "of ", tot_iters
 					time_remaining(start_time, tot_iters, iteration+1)
 					print "Total loss === ",total_loss/print_every
-					print np.squeeze(pred_target).data[0:6]
+					print 'Pred is', np.squeeze(pred_target).data[0:6]
+					# print 'Truth is', np.squeeze(target).data[0:6]
 					# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
 					total_loss = 0.0
-					torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
-					torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
+					# torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
+					# torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 			##############################END OF TRAIN###################################
 
 		elif mode == 'test':
@@ -342,14 +345,18 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 	else:
 		#Call util to get the vectors and optimizer
-		rec_net = loadrec_net(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		optimizer = loadOptimizer(rec_net,os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
+		rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
-		print 'Loading cnn item_vecs'
+		print 'Loading raw image vectors'
 		pt = time.time()
-		cnn_item_vecs = get_cnn_image_vectors()
+		if os.path.exists('../../Data/images_as_variables'):
+			item_images = torch.load('../../Data/images_as_variables')
+		else:
+			item_images = image_ids_to_variable(get_ids_from_file('../../Data/item_to_index.txt'))
+			torch.save(item_images, '../../Data/images_as_variables')
 		et = time.time()
-		print 'Takes', et-pt, 'seconds'
+		print 'Takes', et-pt, 'seconds to load', item_images.size(), 'image variables'
 
 		if mode == 'train':
 			data_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
@@ -359,9 +366,9 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 		if HAVE_CUDA:
 			criterion = criterion.cuda()
-			cnn_item_vecs = cnn_item_vecs.cuda()
+			item_images = item_images.cuda()
 		
-		run_network(rec_net, optimizer, cnn_item_vecs, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every, checkpoint_name=checkpoint_name)
+		run_network(rec_net, optimizer, item_images, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every, checkpoint_name=checkpoint_name)
 
 def run_random_test(batch_size=32, num_negative=50):
 	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
@@ -398,6 +405,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	# run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
+	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Joint Net Recommender")
 	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
-	run_random_test(batch_size=32, num_negative=50)
+	# run_random_test(batch_size=50, num_negative=50)
+
