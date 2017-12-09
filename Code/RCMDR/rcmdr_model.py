@@ -158,6 +158,7 @@ class JointNet(nn.Module):
 		print user_vec
 
 	def cosine_similarity(self, v1, v2):
-		res = v1*v2
-		# res = res.div_(torch.norm(res, 2))
+		v1 = nn.functional.normalize(v1, p=2, dim=1)
+		v2 = nn.functional.normalize(v2, p=2, dim=1)
+		res = torch.sum(v1*v2, dim=1)
 		return res
