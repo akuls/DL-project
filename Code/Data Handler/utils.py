@@ -264,12 +264,12 @@ def loadOptimizer(MODEL, filename=None):
 
 	return optimizer
 
-def loadDeepCNN_net(filename=None):
+def loadJointTrainingNet(filename=None):
 	# Load AutoEncoder
 	if filename is not None and os.path.isfile(filename):
 		rec_net = torch.load(filename)
 	else:
-		rec_net = rmd.FeedForwardDeepCNN()
+		rec_net = rmd.JointNet()
 
 	if HAVE_CUDA == True:
 		rec_net = rec_net.cuda()
