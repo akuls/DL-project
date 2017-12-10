@@ -405,7 +405,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Joint Net Recommender")
+	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Joint_Net_Recommender_Cosine")
 	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
 	# run_random_test(batch_size=50, num_negative=50)
 

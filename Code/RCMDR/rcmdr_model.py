@@ -89,7 +89,9 @@ class JointNet(nn.Module):
 		#Result- 22*22
 
 		nn.Conv2d(in_channels=256, out_channels=1, kernel_size=7, stride=1),
-		nn.ReLU(True)
+		nn.BatchNorm2d(1),
+		# nn.ReLU(True)
+		# nn.Tanh()
 		#Result- 16*16
 		)
 
@@ -100,28 +102,28 @@ class JointNet(nn.Module):
 		nn.ReLU(),
 
 		nn.Linear(512, 256),
-		nn.BatchNorm1d(256)
+		nn.BatchNorm1d(256),
 		)
 
 		#Recommender network
 		self.user_item_FCN = nn.Sequential(
-		nn.Linear(512, 1024),
-		nn.BatchNorm1d(1024),
-		nn.ReLU(),
+		# nn.Linear(512, 1024),
+		# nn.BatchNorm1d(1024),
+		# nn.ReLU(),
 
-		nn.Linear(1024, 512),
-		nn.BatchNorm1d(512),
-		nn.ReLU(),
+		# nn.Linear(1024, 512),
+		# nn.BatchNorm1d(512),
+		# nn.ReLU(),
 
 		nn.Linear(512, 256),
 		nn.BatchNorm1d(256),
 		nn.ReLU(),
 
-		nn.Linear(256, 64),
-		nn.BatchNorm1d(64),
-		nn.ReLU(),
+		nn.Linear(256, 1),
+		# nn.BatchNorm1d(1),
+		# nn.ReLU(),
 
-		nn.Linear(64, 1),
+		# nn.Linear(64, 1),
 		nn.BatchNorm1d(1),
 		nn.Sigmoid()
 		)
@@ -133,14 +135,18 @@ class JointNet(nn.Module):
 		y_item_CNN = y_item_CNN.view(y_item_CNN.size()[0], y_item_CNN.size()[1]*y_item_CNN.size()[2]*y_item_CNN.size()[3])
 		# print 'Item net output size', y_item_CNN.size()
 
+		# print '+++++++++++++++++++++++++++++++++++++++++ Before Combine +++++++++++++++++++++++++++++++++++++'
+		# print y_item_CNN.data[0]
 		y_user_FCN = self.user_FCN(user_vec)
 		# print 'User net output size', y_user_FCN.size()
 
 		x_user_item_FCN = self.combine_user_data(y_user_FCN, y_item_CNN)
 		# print 'User_item input size', x_user_item_FCN.size()
 
-		# y_pred = self.user_item_FCN(x_user_item_FCN)
-		y_pred = self.cosine_similarity(y_user_FCN, y_item_CNN)
+		# print '+++++++++++++++++++++++++++++++++++++++++ After Combine +++++++++++++++++++++++++++++++++++++'
+		# print x_user_item_FCN.data[0]
+		y_pred = self.user_item_FCN(x_user_item_FCN)
+		# y_pred = self.cosine_similarity(y_user_FCN, y_item_CNN)
 		return y_pred
 
 	def get_embeddding(self):
@@ -161,4 +167,6 @@ class JointNet(nn.Module):
 		v1 = nn.functional.normalize(v1, p=2, dim=1)
 		v2 = nn.functional.normalize(v2, p=2, dim=1)
 		res = torch.sum(v1*v2, dim=1)
+		res += 1.0
+		res /= 2.0
 		return res
