@@ -146,7 +146,7 @@ class JointNet(nn.Module):
 		# print '+++++++++++++++++++++++++++++++++++++++++ After Combine +++++++++++++++++++++++++++++++++++++'
 		# print x_user_item_FCN.data[0]
 		y_pred = self.user_item_FCN(x_user_item_FCN)
-		# y_pred = self.cosine_similarity(y_user_FCN, y_item_CNN)
+		#y_pred = self.cosine_similarity(y_user_FCN, y_item_CNN)
 		return y_pred
 
 	def get_embeddding(self):
@@ -164,8 +164,8 @@ class JointNet(nn.Module):
 		print user_vec
 
 	def cosine_similarity(self, v1, v2):
-		v1 = nn.functional.normalize(v1, p=2, dim=1)
-		v2 = nn.functional.normalize(v2, p=2, dim=1)
+		v1 = v1 / v1.norm(2, 1).clamp(min=1e-12).expand_as(v1)
+		v2 = v2 / v2.norm(2,1).clamp(min=1e-12).expand_as(v2)
 		res = torch.sum(v1*v2, dim=1)
 		res += 1.0
 		res /= 2.0

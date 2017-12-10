@@ -256,7 +256,7 @@ def loadrec_net(filename=None):
 	return rec_net
 
 def loadOptimizer(MODEL, filename=None):
-	optimizer = optim.Adam(MODEL.parameters(), lr=0.1)
+	optimizer = optim.Adam(MODEL.parameters(), lr=0.01)
 	if filename is not None and os.path.isfile(filename):
 		optimizer.load_state_dict(torch.load(filename))
 	# else:

@@ -286,8 +286,8 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 					# print 'Truth is', np.squeeze(target).data[0:6]
 					# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
 					total_loss = 0.0
-					# torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
-					# torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
+					torch.save(rec_net,os.getcwd()+"/Checkpoints/"+checkpoint_name)
+					torch.save(optimizer.state_dict(),os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 			##############################END OF TRAIN###################################
 
 		elif mode == 'test':
@@ -405,7 +405,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=10, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Joint_Net_Recommender_Cosine")
+	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
 	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
 	# run_random_test(batch_size=50, num_negative=50)
 
