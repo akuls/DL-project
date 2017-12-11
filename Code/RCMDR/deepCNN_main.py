@@ -19,7 +19,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 	# print "Test dict length", len(test_dict)
 	n = len(topK_list)
-	print n
+	# print n
 	prev_user = -1
 	tp = 0
 	fp = 0
@@ -397,10 +397,11 @@ def run_random_test(batch_size=32, num_negative=50):
 
 	HR = 0.0
 	start_time = time.time()
+	batch_size *= num_negative
 	for i in range(0, len(test_batch), batch_size):
 		# Randomly predict 
 		pred_target = np.random.uniform(0.0, 1.0, (batch_size, 1))
-		x = compute_metrics(pred_target, test_batch[i:i+batch_size], test_dict, topK=10)
+		x, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], test_dict, topK=2)
 		# print 'i', x
 		HR += x
 
@@ -410,6 +411,6 @@ def run_random_test(batch_size=32, num_negative=50):
 
 if __name__ == '__main__':
 	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
-	run_recommender(batch_size=32, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
-	# run_random_test(batch_size=50, num_negative=50)
+	# run_recommender(batch_size=32, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
+	run_random_test(batch_size=32, num_negative=100)
 
