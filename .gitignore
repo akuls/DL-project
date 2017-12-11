@@ -6,3 +6,4 @@ Code/CLUSTERING/*
 Code/*/Checkpoints/*
 Experiments/*
 run.sh
+Code/*/.fuse*
