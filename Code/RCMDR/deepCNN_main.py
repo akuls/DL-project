@@ -19,6 +19,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
 	# print "Test dict length", len(test_dict)
 	n = len(topK_list)
+	print n
 	prev_user = -1
 	tp = 0
 	fp = 0
@@ -72,7 +73,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	# print n
 	# print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
 	# return sum(user_precision)/num_users
-	return total_hits/(topK*float(num_users))
+	return total_hits/(topK*float(num_users)),total_hits
 
 
 def compute_metrics(pred, triples, test_dict, topK=10):
@@ -312,6 +313,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			start_time = time.time()
 			batch_size *= num_negative
 			HR = 0.0
+			total_hits = 0
 			for i in range(0, len(test_batch), batch_size):
 				item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
 				if HAVE_CUDA:
@@ -326,8 +328,9 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				print 'Test time loss is', loss.data[0]
 				print 'Pred target shape', pred_target.size()
 
-				HR += compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=10)
-
+				HR_add, th = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=2)
+				HR += HR_add
+				total_hits += th
 				# all_pred[i:i+batch_size] = pred_target
 
 				#if(i>100):
@@ -335,6 +338,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			HR /= (len(test_batch)/batch_size)
 			print "Time taken to predict: ", time.time()-start_time
 			print "Hit rate is", HR
+			print "Total Hits", total_hits
 			# compute_metrics(all_pred, test_batch, topK=10)
 			pass
 
@@ -405,7 +409,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
-	# run_recommender(batch_size=32, mode="test", num_epochs=10, num_negative=50, criterion=nn.MSELoss(),checkpoint_name="Deep CNN Recommender")
+	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
+	run_recommender(batch_size=32, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
 	# run_random_test(batch_size=50, num_negative=50)
 
