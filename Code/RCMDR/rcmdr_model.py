@@ -180,15 +180,18 @@ class DeepJointNet(nn.Module):
 		#Image network
 		self.item_CNN = nn.Sequential(
 		nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, stride=1),
+		nn.BatchNorm2d(32),
 		nn.ReLU(True),
 		#Result- 46*46
 		nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=1),
+		nn.BatchNorm2d(64),
 		nn.ReLU(True),
 		#Result- 43*43
 		nn.MaxPool2d(kernel_size=3, stride=1),
 		#Resut- 41*41
 
 		nn.Conv2d(in_channels=64, out_channels=256, kernel_size=4, stride=1),
+		nn.BatchNorm2d(256),
 		nn.ReLU(True),
 		#Result- 38*38
 		
