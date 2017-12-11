@@ -276,6 +276,8 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				total_loss += loss.data[0]
 				loss.backward()
 				optimizer.step()
+				print time.time()-start_time
+				break																																																																																																																																																																																																																																																																																																																																																																																																																																																																																											
 				
 				# Print loss after ever batch of training
 				if (iteration+1) % print_every == 0 or (iteration+1) == tot_iters:
@@ -349,7 +351,8 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 
 	else:
 		#Call util to get the vectors and optimizer
-		rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -410,7 +413,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
+	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender")
 	# run_recommender(batch_size=32, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
-	run_random_test(batch_size=32, num_negative=100)
+	# run_random_test(batch_size=32, num_negative=100)
 
