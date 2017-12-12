@@ -109,7 +109,9 @@ def compute_metrics(pred, triples, test_dict, topK=10):
 	# print topK_list[0:topK]
 	#At this point, topN_list has topK for all users sorted in descending order
 	#Use this and the ground truth dictionary to compute metrics for each/all users
-	return compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK)
+	# return compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK)
+	aa,bb = compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK)
+	return aa, bb, topK_list#remove this later
 
 def get_data_for_rcmdr(cnn_item_vecs, index_triples):
 	"""
@@ -276,9 +278,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				total_loss += loss.data[0]
 				loss.backward()
 				optimizer.step()
-				print time.time()-start_time
-				break																																																																																																																																																																																																																																																																																																																																																																																																																																																																																											
-				
+
 				# Print loss after ever batch of training
 				if (iteration+1) % print_every == 0 or (iteration+1) == tot_iters:
 					print "============================================"
@@ -330,13 +330,14 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				print 'Test time loss is', loss.data[0]
 				print 'Pred target shape', pred_target.size()
 
-				HR_add, th = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=2)
+				HR_add, th, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=10)
 				HR += HR_add
 				total_hits += th
+				print HR_add, _
 				# all_pred[i:i+batch_size] = pred_target
 
-				#if(i>100):
-				#	break
+				if(i>100):
+					break
 			HR /= (len(test_batch)/batch_size)
 			print "Time taken to predict: ", time.time()-start_time
 			print "Hit rate is", HR
@@ -352,7 +353,7 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -413,7 +414,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender")
-	# run_recommender(batch_size=32, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
+	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender")
+	run_recommender(batch_size=1, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
 	# run_random_test(batch_size=32, num_negative=100)
 
