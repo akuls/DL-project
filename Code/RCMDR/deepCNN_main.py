@@ -38,13 +38,13 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 		if u != prev_user:
 			if(prev_user != -1):
 				# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
-				user_AP.append((prev_user, temp_ap))
-				user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-				num_user_test_items = float(len(test_dict[str(prev_user)]))
-				user_recall.append((prev_user, (num_user_test_items-float(tp))/num_user_test_items))
-				MAP += temp_ap
+				#user_AP.append((prev_user, temp_ap))
+				#user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
+				#num_user_test_items = float(len(test_dict[str(prev_user)]))
+				#user_recall.append((prev_user, (num_user_test_items-float(tp))/num_user_test_items))
+				#MAP += temp_ap
 				num_users += 1
-				total_hits += tp
+				#total_hits += tp
 
 			prev_user = u
 			tp = fp = 0
@@ -53,6 +53,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 
 		if(ground_truth_dict[(u, v)] == 1):
 			tp += 1
+			total_hits += 1
 		else:
 			fp += 1
 
@@ -66,7 +67,7 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 	user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
 	MAP += temp_ap
 	num_users += 1
-
+#	total_hits += tp
 	MAP /= float(num_users)
 	# print 'MAP is', MAP
 	# print total_hits/float(len(test_dict))
@@ -297,7 +298,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			print 'In test block'
 			#Read train dict for negative sampling
 			train_dict = get_dict_from_index_mapping("../../Data/user_item_train.txt")
-
+			rec_net.eval()
 			#Merge with test dict for negative sampling
 			merged = {}
 			for user_idx, item_idxs in train_dict.iteritems():
@@ -330,14 +331,14 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				print 'Test time loss is', loss.data[0]
 				print 'Pred target shape', pred_target.size()
 
-				HR_add, th, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=10)
+				HR_add, th, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=2)
 				HR += HR_add
 				total_hits += th
-				print HR_add, _
+				print HR_add 
 				# all_pred[i:i+batch_size] = pred_target
 
-				if(i>100):
-					break
+				#if(i>100000):
+				#	break
 			HR /= (len(test_batch)/batch_size)
 			print "Time taken to predict: ", time.time()-start_time
 			print "Hit rate is", HR
@@ -353,7 +354,7 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -415,6 +416,6 @@ def run_random_test(batch_size=32, num_negative=50):
 
 if __name__ == '__main__':
 	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender")
-	run_recommender(batch_size=1, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="No_Activation_Joint_Net_Recommender_DFC")
+	run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
 	# run_random_test(batch_size=32, num_negative=100)
 
