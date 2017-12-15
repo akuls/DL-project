@@ -16,64 +16,16 @@ def compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK):
 
 	Computes precision, recall, MAP, HR@10
 	"""
-	# test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
-	# print "Test dict length", len(test_dict)
+	
 	n = len(topK_list)
-	# print n
-	prev_user = -1
-	tp = 0
-	fp = 0
-	start = 0
-	user_precision = []
-	user_recall = []
-	user_AP = []
-	temp_ap = 0.0
-	MAP = 0.0
-	num_users = 0
+	
+	num_users = n/topK
 	total_hits = 0
 
 	for i in range(n):
 		u, val, v = topK_list[i]
-
-		if u != prev_user:
-			if(prev_user != -1):
-				# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
-				#user_AP.append((prev_user, temp_ap))
-				#user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-				#num_user_test_items = float(len(test_dict[str(prev_user)]))
-				#user_recall.append((prev_user, (num_user_test_items-float(tp))/num_user_test_items))
-				#MAP += temp_ap
-				num_users += 1
-				#total_hits += tp
-
-			prev_user = u
-			tp = fp = 0
-			start = i
-			temp_ap = 0.0
-
 		if(ground_truth_dict[(u, v)] == 1):
-			tp += 1
 			total_hits += 1
-		else:
-			fp += 1
-
-		#Running ratio of tp/total_seen_till_now for each user
-		temp_ap += float(tp)/float(i-start+1)
-
-	#Last user outside the loop	
-	# print 'HR@', topK, 'for user', prev_user, '= ', float(tp)/float(topK)
-	user_AP.append((prev_user, temp_ap))
-	user_precision.append((prev_user, float(tp)/(float(tp)+float(fp))))
-	user_recall.append((prev_user, float(fp)/float(len(test_dict[str(prev_user)]))))
-	MAP += temp_ap
-	num_users += 1
-#	total_hits += tp
-	MAP /= float(num_users)
-	# print 'MAP is', MAP
-	# print total_hits/float(len(test_dict))
-	# print n
-	# print 'Average HR@', topK, 'per user is', total_hits/float(num_users)
-	# return sum(user_precision)/num_users
 	return total_hits/(topK*float(num_users)),total_hits
 
 
@@ -378,6 +330,23 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 			item_images = item_images.cuda()
 		
 		run_network(rec_net, optimizer, item_images, batch_size, mode, num_negative, num_epochs, data_dict=data_dict, criterion=criterion, print_every = print_every, checkpoint_name=checkpoint_name)
+
+def run_saliency(image_ids = None, user_id = None, checkpoint_name="Recommender_Network"):
+	#Call util to get the vectors and optimizer
+	# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+	rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+	optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
+	rec_net.eval()
+
+	print 'Loading raw image vectors'
+	pt = time.time()
+	item_images = image_ids_to_variable(image_ids)
+
+
+
+	if HAVE_CUDA:
+		criterion = criterion.cuda()
+		item_images = item_images.cuda()
 
 def run_random_test(batch_size=32, num_negative=50):
 	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
