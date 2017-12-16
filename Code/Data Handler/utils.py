@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import numpy as np
+print np.__path__
 import collections
 from torchvision import transforms
 import PIL
@@ -160,7 +161,9 @@ def image_ids_to_variable(item_ids):
 	"""
 	image_variables = ag.Variable(torch.zeros(len(item_ids),3,50,50))
 	for i in range(len(item_ids)):
-		item_variable = np.squeeze(image_id_to_variable(item_ids[i]))
+		sh = image_id_to_variable(item_ids[i]).shape
+		print sh
+		item_variable = torch.squeeze(image_id_to_variable(item_ids[i]))
 		image_variables[i] = item_variable
 		# print item_variable
 		# break
@@ -282,6 +285,18 @@ def loadDeepJointTrainingNet(filename=None):
 		rec_net = torch.load(filename)
 	else:
 		rec_net = rmd.DeepJointNet()
+
+	if HAVE_CUDA == True:
+		rec_net = rec_net.cuda()
+
+	return rec_net
+
+def loadDeepRELUJointTrainingNet(filename=None):
+	# Load AutoEncoder
+	if filename is not None and os.path.isfile(filename):
+		rec_net = torch.load(filename)
+	else:
+		rec_net = rmd.DeepRELUJointNet()
 
 	if HAVE_CUDA == True:
 		rec_net = rec_net.cuda()

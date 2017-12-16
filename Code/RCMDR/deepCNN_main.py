@@ -4,7 +4,7 @@ import torch
 sys.path.append('../Data Handler')
 from utils import *
 import rcmdr_model as rcmdr_model
-
+import torch.nn.functional as F
 if HAVE_CUDA:
 	import torch.cuda as cuda
 
@@ -87,7 +87,8 @@ def get_data_for_rcmdr(cnn_item_vecs, index_triples):
 		#Get real valued vectors for these
 		user = ag.Variable(torch.LongTensor([u])).view(1,1)
 		item = cnn_item_vecs[v].view(1, 3, 50, 50)
-		target = ag.Variable(torch.FloatTensor([val]), requires_grad=False)
+		# print int(val)
+		target = ag.Variable(torch.LongTensor([int(val)]), requires_grad=False) # Change to Float for MSE
 
 		if(flag == 0):
 			item_data = item
@@ -238,7 +239,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 					print iteration+1, "of ", tot_iters
 					time_remaining(start_time, tot_iters, iteration+1)
 					print "Total loss === ",total_loss/print_every
-					print 'Pred is', np.squeeze(pred_target).data[0:6]
+					print 'Pred is', torch.squeeze(pred_target).data[0:6]
 					# print 'Truth is', np.squeeze(target).data[0:6]
 					# print "Mismatch = ", round(np.squeeze(pred_target).data.numpy())-target
 					total_loss = 0.0
@@ -306,7 +307,8 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadDeepRELUJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		criterion = nn.CrossEntropyLoss() # Only for RELU model
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -336,17 +338,42 @@ def run_saliency(image_ids = None, user_id = None, checkpoint_name="Recommender_
 	# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 	rec_net = loadDeepJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 	optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
-	rec_net.eval()
+	# rec_net.eval()
 
 	print 'Loading raw image vectors'
 	pt = time.time()
-	item_images = image_ids_to_variable(image_ids)
-
-
-
+	item_data = image_ids_to_variable(image_ids)
+	# item_data.requires_grad = True
+	user_data = ag.Variable(torch.LongTensor([user_id for i in range(len(image_ids))]))
+	target = ag.Variable(torch.FloatTensor([1 for i in range(len(image_ids))]))
+	# criterion = F.MSELoss()
 	if HAVE_CUDA:
-		criterion = criterion.cuda()
-		item_images = item_images.cuda()
+		# criterion = criterion.cuda()
+		item_data = item_data.cuda()
+		user_data = user_data.cuda()
+		target = target.cuda()
+
+	# print rec_net(item_data, user_data)
+
+	for x in rec_net.parameters():
+		tx = x.clone()
+		break
+	optimizer.zero_grad()
+	pred_target = rec_net(item_data, user_data)
+	loss = torch.nn.functional.mse_loss(pred_target,target)
+	# print loss.data[0]
+	print loss.grad
+	loss.backward()
+	print loss.grad
+	optimizer.step()
+	print pred_target.requires_grad, target.requires_grad
+	print pred_target.grad
+	print user_data.requires_grad
+	for x in rec_net.parameters():
+		print x.requires_grad
+		break
+	# pred_target.backward(torch.Tensor([1 for i in range(len(image_ids))]).view(-1,1))
+	# print item_data.grad.data
 
 def run_random_test(batch_size=32, num_negative=50):
 	test_dict = get_dict_from_index_mapping("../../Data/user_item_test.txt")
@@ -384,7 +411,10 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	# run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender")
-	run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
+	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=1, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Joint_Net_Recommender")
+	# run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
 	# run_random_test(batch_size=32, num_negative=100)
+	# items = ["B0007UDXF2","B000GZQHKG"]
+	# user = 13822
+	# run_saliency(items,user,"Deep_Net")
 
