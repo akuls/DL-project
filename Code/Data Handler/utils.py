@@ -315,6 +315,18 @@ def loadDeepItemJointTrainingNet(filename=None):
 
 	return rec_net
 
+def loadDeepRELUItemJointTrainingNet(filename=None):
+	# Load AutoEncoder
+	if filename is not None and os.path.isfile(filename):
+		rec_net = torch.load(filename)
+	else:
+		rec_net = rmd.DeepRELUItemJointNet()
+
+	if HAVE_CUDA == True:
+		rec_net = rec_net.cuda()
+
+	return rec_net
+
 def get_ids_to_index_dict_from_file(filename):
 	"""
 	filename: user or item's id->index file 

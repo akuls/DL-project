@@ -89,7 +89,7 @@ def get_data_for_rcmdr(cnn_item_vecs, index_triples,item_bool=False):
 		itemid = ag.Variable(torch.LongTensor([v])).view(1,1)
 		item = cnn_item_vecs[v].view(1, 3, 50, 50)
 		# print int(val)
-		target = ag.Variable(torch.FloatTensor([int(val)]), requires_grad=False) # Change to Float for MSE
+		target = ag.Variable(torch.LongTensor([int(val)]), requires_grad=False) # Change to Float for MSE
 
 		if(flag == 0):
 			item_data = item
@@ -227,6 +227,7 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				# print 'All data collected', item_data.size(), user_data.size(), target.size()
 				if HAVE_CUDA:
 					item_data = item_data.cuda()
+					itemid_data = itemid_data.cuda()
 					user_data = user_data.cuda()
 					target = target.cuda()
 
@@ -314,8 +315,8 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepItemJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		# criterion = nn.CrossEntropyLoss() # Only for RELU model
+		rec_net = loadDeepRELUItemJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		criterion = nn.CrossEntropyLoss() # Only for RELU model
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -418,7 +419,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=1, num_negative=5, print_every=1, criterion=nn.MSELoss(),checkpoint_name="Deep_Item_Joint_Net_Recommender")
+	run_recommender(batch_size=32, mode="train", num_epochs=1, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Item_Joint_Net_Recommender")
 	# run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
 	# run_random_test(batch_size=32, num_negative=100)
 	# items = ["B0007UDXF2","B000GZQHKG"]
