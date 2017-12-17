@@ -66,7 +66,7 @@ def compute_metrics(pred, triples, test_dict, topK=10):
 	aa,bb = compute_PRF_HR(topK_list, ground_truth_dict, test_dict, topK)
 	return aa, bb, topK_list#remove this later
 
-def get_data_for_rcmdr(cnn_item_vecs, index_triples):
+def get_data_for_rcmdr(cnn_item_vecs, index_triples,item_bool=False):
 	"""
 	cnn_item_vecs- item vectors from the autoencoder
 	index_triples- triple list containing (user_idx, item_idx, ground_truth)
@@ -86,20 +86,25 @@ def get_data_for_rcmdr(cnn_item_vecs, index_triples):
 
 		#Get real valued vectors for these
 		user = ag.Variable(torch.LongTensor([u])).view(1,1)
+		itemid = ag.Variable(torch.LongTensor([v])).view(1,1)
 		item = cnn_item_vecs[v].view(1, 3, 50, 50)
 		# print int(val)
-		target = ag.Variable(torch.LongTensor([int(val)]), requires_grad=False) # Change to Float for MSE
+		target = ag.Variable(torch.FloatTensor([int(val)]), requires_grad=False) # Change to Float for MSE
 
 		if(flag == 0):
 			item_data = item
 			user_data = user
+			itemid_data = itemid
 			targets = target
 			flag = 1
 		else:
 			item_data = torch.cat((item_data, item),0)
+			itemid_data = torch.cat((itemid_data, itemid),0)
 			user_data = torch.cat((user_data, user),0)
 			targets = torch.cat((targets, target),0)
 
+	if item_bool:
+		return item_data, user_data, targets, itemid_data
 	return item_data, user_data, targets
 
 def add_negative_samples_train(tuple_list, data_dict, total_items, num_negative=0):
@@ -216,7 +221,8 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				# print 'Number of positive samples', len(train_batch)
 				train_batch = add_negative_samples_train(train_batch, data_dict, num_items, num_negative)
 				# print 'Number of positive+negative samples', len(train_batch)
-				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
+				# item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
+				item_data, user_data, target, itemid_data = get_data_for_rcmdr(item_vecs, train_batch,True)
 				
 				# print 'All data collected', item_data.size(), user_data.size(), target.size()
 				if HAVE_CUDA:
@@ -226,7 +232,8 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 
 				optimizer.zero_grad()
 				#Training a full batch
-				pred_target = rec_net(item_data, user_data)
+				# print item_data,itemid_data,user_data
+				pred_target = rec_net(item_data, itemid_data, user_data)
 				loss = 0.0
 				loss = criterion(pred_target, target)
 				total_loss += loss.data[0]
@@ -307,8 +314,8 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepRELUJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		criterion = nn.CrossEntropyLoss() # Only for RELU model
+		rec_net = loadDeepItemJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		# criterion = nn.CrossEntropyLoss() # Only for RELU model
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
 		print 'Loading raw image vectors'
@@ -411,7 +418,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=50, num_negative=5, print_every=1, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Joint_Net_Recommender")
+	run_recommender(batch_size=32, mode="train", num_epochs=1, num_negative=5, print_every=1, criterion=nn.MSELoss(),checkpoint_name="Deep_Item_Joint_Net_Recommender")
 	# run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
 	# run_random_test(batch_size=32, num_negative=100)
 	# items = ["B0007UDXF2","B000GZQHKG"]
