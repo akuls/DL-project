@@ -221,20 +221,21 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 				# print 'Number of positive samples', len(train_batch)
 				train_batch = add_negative_samples_train(train_batch, data_dict, num_items, num_negative)
 				# print 'Number of positive+negative samples', len(train_batch)
-				# item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
-				item_data, user_data, target, itemid_data = get_data_for_rcmdr(item_vecs, train_batch,True)
+				item_data, user_data, target = get_data_for_rcmdr(item_vecs, train_batch)
+				# item_data, user_data, target, itemid_data = get_data_for_rcmdr(item_vecs, train_batch,True)
 				
 				# print 'All data collected', item_data.size(), user_data.size(), target.size()
 				if HAVE_CUDA:
 					item_data = item_data.cuda()
-					itemid_data = itemid_data.cuda()
+					# itemid_data = itemid_data.cuda()
 					user_data = user_data.cuda()
 					target = target.cuda()
 
 				optimizer.zero_grad()
 				#Training a full batch
 				# print item_data,itemid_data,user_data
-				pred_target = rec_net(item_data, itemid_data, user_data)
+				pred_target = rec_net(item_data, user_data)
+				# pred_target = rec_net(item_data, itemid_data, user_data)
 				loss = 0.0
 				loss = criterion(pred_target, target)
 				total_loss += loss.data[0]
@@ -315,7 +316,7 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepRELUItemJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadDeepRELUJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		criterion = nn.CrossEntropyLoss() # Only for RELU model
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
@@ -419,7 +420,7 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=1, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Item_Joint_Net_Recommender")
+	run_recommender(batch_size=32, mode="train", num_epochs=200, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Joint_Net_Recommender_BN_200")
 	# run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
 	# run_random_test(batch_size=32, num_negative=100)
 	# items = ["B0007UDXF2","B000GZQHKG"]
