@@ -40,7 +40,7 @@ def compute_metrics(pred, triples, test_dict, topK=10):
 	n = len(triples)
 	for i in range(n):
 		u, v, ground_truth_dict[(u, v)] = triples[i]
-		final_triple.append((u, pred.data[i][0], v))
+		final_triple.append((u, pred.data[i][1], v))
 		
 	#Sort them while keeping user's data together
 	sorted_triple = sorted(final_triple, reverse=True)
@@ -280,23 +280,26 @@ def run_network(rec_net, optimizer, item_vecs, batch_size, mode, num_negative, n
 			HR = 0.0
 			total_hits = 0
 			for i in range(0, len(test_batch), batch_size):
-				item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
+				#item_data, user_data, target = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size])
+				item_data, user_data, target, itemid_data = get_data_for_rcmdr(item_vecs, test_batch[i:i+batch_size],True)
 				if HAVE_CUDA:
 					item_data = item_data.cuda()
+					itemid_data = itemid_data.cuda()
 					user_data = user_data.cuda()
 					target = target.cuda()
-				print 'Correct till here with total items/user', item_data.size(), user_data.size()
+				#print 'Correct till here with total items/user', item_data.size(), user_data.size()
 				
 				#Run forward pass to get the results
-				pred_target = rec_net(item_data, user_data)
+				#pred_target = rec_net(item_data, user_data)
+				pred_target = rec_net(item_data, itemid_data, user_data)
 				loss = criterion(pred_target, target)
-				print 'Test time loss is', loss.data[0]
-				print 'Pred target shape', pred_target.size()
+				#print 'Test time loss is', loss.data[0]
+				#print 'Pred target shape', pred_target.size()
 
-				HR_add, th, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=2)
+				HR_add, th, _ = compute_metrics(pred_target, test_batch[i:i+batch_size], data_dict, topK=10)
 				HR += HR_add
 				total_hits += th
-				print HR_add 
+				#print HR_add 
 				# all_pred[i:i+batch_size] = pred_target
 
 				#if(i>100000):
@@ -316,7 +319,7 @@ def run_recommender(batch_size=None, mode=None, num_epochs=None, num_negative=0,
 	else:
 		#Call util to get the vectors and optimizer
 		# rec_net = loadJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
-		rec_net = loadDeepRELUJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
+		rec_net = loadDeepRELUItemJointTrainingNet(os.getcwd()+"/Checkpoints/"+checkpoint_name)
 		criterion = nn.CrossEntropyLoss() # Only for RELU model
 		optimizer = loadOptimizer(rec_net, os.getcwd()+"/Checkpoints/optim_"+checkpoint_name)
 
@@ -420,8 +423,8 @@ def run_random_test(batch_size=32, num_negative=50):
 	print "Hit rate is", HR
 
 if __name__ == '__main__':
-	run_recommender(batch_size=32, mode="train", num_epochs=200, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Joint_Net_Recommender_BN_200")
-	# run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN")
+	# run_recommender(batch_size=32, mode="train", num_epochs=200, num_negative=5, print_every=100, criterion=nn.MSELoss(),checkpoint_name="Deep_Joint_Net_Recommender_BN_200")
+	run_recommender(batch_size=4, mode="test", num_negative=100, criterion=nn.MSELoss(),checkpoint_name="Deep_RELU_Item_Joint_Net_Recommender_Max")
 	# run_random_test(batch_size=32, num_negative=100)
 	# items = ["B0007UDXF2","B000GZQHKG"]
 	# user = 13822
